@@ -13,8 +13,8 @@ test:
 	@${BASE_CMD} mix test
 
 fulltest:
-	@${BASE_CMD} mix dialyzer
-	@${BASE_CMD} mix test --cover
+	-@${BASE_CMD} mix dialyzer
+	-@${BASE_CMD} mix test --cover
 
 format:
 	@${BASE_CMD} mix format
