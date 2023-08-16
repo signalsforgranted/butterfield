@@ -32,8 +32,7 @@ defmodule Roughtime.Wire do
       length::unsigned-big-integer-size(32),
       message::binary
     >> = packet
-
-    <<message::binary-size(length)>>
+	[length, message]
   end
 
   @doc """

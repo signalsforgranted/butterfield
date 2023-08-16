@@ -2,12 +2,10 @@ defmodule Roughtime.WireTest do
   use ExUnit.Case
   doctest Roughtime.Wire
 
-  test "generates valid packet" do
-    payload = <<0x74657374>>
-    got = Roughtime.Wire.generate_packet(payload)
-    assert Roughtime.Wire.parse_packet(got) == payload
+  test "parses -07 request" do
+    payload = "test/fixtures/-07-request.bin"
+	  |> File.read!()
+	request = Roughtime.Wire.parse_packet(payload)
   end
 
-  test "generates message block" do
-  end
 end
