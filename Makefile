@@ -4,6 +4,7 @@ BASE_CMD=docker run -it --rm -p 2002:2002/udp -v ${PWD}:/usr/src/app butterfield
 
 build:
 	@docker build -t butterfield .
+	@${BASE_CMD} mix deps.get
 
 iex:
 	@${BASE_CMD} iex -S mix
