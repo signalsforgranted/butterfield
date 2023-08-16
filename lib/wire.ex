@@ -3,7 +3,7 @@ defmodule Roughtime.Wire do
   Handle all of the parsing and generation of packets.
   """
   # "ROUGHTIM"
-  @protocol_identifier 0x4D49544847554F52
+  @protocol_identifier 0x524f55474854494d
 
   @doc """
   Roughtime packets are comprised of a constant header, the length (as they are
