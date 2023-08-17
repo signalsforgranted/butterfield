@@ -94,9 +94,13 @@ defmodule Roughtime.Wire do
     offsets = for <<offset::unsigned-little-integer-size(32) <- offsets>>, do: offset
     tags = for <<tag::bitstring-size(32) <- tags>>, do: tag
 
+    # Append and prepend start end end values, to make scanning more logical
+    offsets = [ 0 | offsets ] ++ [ byte_size(message) ]
+
+    # TODO Iterate, stopping at second last.
+
     [total_pairs, offset_len, offsets, tags]
 
-    # Tags can be repeated, so a list of kv pairs makes sense
   end
 
   def generate_message() do
