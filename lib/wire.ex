@@ -3,7 +3,7 @@ defmodule Roughtime.Wire do
   Handle all of the parsing and generation of packets.
   """
   # "ROUGHTIM"
-  @protocol_identifier 0x524f55474854494d
+  @protocol_identifier 0x4d49544847554f52
 
   @doc """
   Roughtime packets are comprised of a constant header, the length (as they are
@@ -28,11 +28,11 @@ defmodule Roughtime.Wire do
   @spec parse_packet(binary()) :: any()
   def parse_packet(packet) do
     <<
-      @protocol_identifier::unsigned-big-integer-size(64),
-      length::unsigned-big-integer-size(32),
+      @protocol_identifier::unsigned-little-integer-size(64),
+      length::unsigned-little-integer-size(32),
       message::binary
     >> = packet
-	[length, message]
+    <<message::binary-size(length)>>
   end
 
   @doc """
@@ -42,8 +42,8 @@ defmodule Roughtime.Wire do
   @spec generate_packet(binary()) :: binary()
   def generate_packet(message) do
     <<
-      @protocol_identifier::unsigned-big-integer-size(64),
-      byte_size(message)::unsigned-big-integer-size(32),
+      @protocol_identifier::unsigned-little-integer-size(64),
+      byte_size(message)::unsigned-little-integer-size(32),
       message::binary
     >>
   end
@@ -78,15 +78,15 @@ defmodule Roughtime.Wire do
   """
   def parse_message(message) when is_binary(message) do
     <<
-      total_pairs::unsigned-big-integer-size(32),
+      total_pairs::unsigned-little-integer-size(32),
       offsets_tags_values::binary
     >> = message
 
     offset_len = (total_pairs - 1) * 32
     # FIXME: Handle <= 1 tag, not permitted but could happen
     <<
-      offsets::unsigned-big-integer-size(offset_len),
-      tags::unsigned-big-integer-size(total_pairs * 32),
+      offsets::unsigned-little-integer-size(offset_len),
+      tags::unsigned-little-integer-size(total_pairs * 32),
       _values::binary
     >> = offsets_tags_values
 
