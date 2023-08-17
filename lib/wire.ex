@@ -7,7 +7,7 @@ defmodule Roughtime.Wire do
 
   @doc """
   Roughtime packets are comprised of a constant header, the length (as they are
-  padded to MTU)
+  padded to MTU or nearabouts)
   ```
   0                   1                   2                   3
   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -83,16 +83,18 @@ defmodule Roughtime.Wire do
     >> = message
 
     offset_len = (total_pairs - 1) * 32
-    # FIXME: Handle <= 1 tag, not permitted but could happen
+    tags_len = total_pairs * 32
+
     <<
-      offsets::unsigned-little-integer-size(offset_len),
-      tags::unsigned-little-integer-size(total_pairs * 32),
-      _values::binary
+      offsets::bitstring-size(offset_len),
+      tags::bitstring-size(tags_len),
+      values::binary
     >> = offsets_tags_values
 
-    # FIXME: more pragmatic way of doing this
-    _offsets = for <<offset::32 <- offsets>>, do: offset
-    _tags = for <<tag::32 <- tags>>, do: tag
+    offsets = for <<offset::unsigned-little-integer-size(32) <- offsets>>, do: offset
+    tags = for <<tag::bitstring-size(32) <- tags>>, do: tag
+
+    [total_pairs, offset_len, offsets, tags]
 
     # Tags can be repeated, so a list of kv pairs makes sense
   end
