@@ -1,7 +1,7 @@
 defmodule Roughtime.Wire do
   @moduledoc """
   Handle all of the parsing and generation of packets.
-  
+
   Roughtime packets are comprised of a constant header, the length (as they are
   padded to MTU or nearabouts) and the rest of the payload.
 
@@ -22,8 +22,7 @@ defmodule Roughtime.Wire do
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   ```
 
-  Messages are the main section of the payload, and contain the following
-  structure:
+  Messages are the main section of the payload, and contain the following:
   ```
   0                   1                   2                   3
   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -59,18 +58,18 @@ defmodule Roughtime.Wire do
   """
   @spec parse(binary()) :: list()
   def parse(packet) when is_binary(packet) do
-	# Parse header and separate out message
+    # Parse header and separate out message
     <<
       @protocol_identifier::unsigned-little-integer-size(64),
       length::unsigned-little-integer-size(32),
       message::binary
     >> = packet
 
-	# It's possible we got more than the announced length, so truncate it...
+    # It's possible we got more than the announced length, so truncate it...
     message = <<message::binary-size(length)>>
 
-	# Parse message block, everything here is 32 bit aligned, hence why you'll
-	# see that used a lot in this section.
+    # Parse message block, everything here is 32 bit aligned, hence why you'll
+    # see that used a lot in this section.
     <<
       total_pairs::unsigned-little-integer-size(32),
       offsets_tags_values::binary
@@ -100,8 +99,8 @@ defmodule Roughtime.Wire do
 
       # Remove null byte so we treat all tags like strings
       <<name::binary-size(3), last::binary>> = Enum.at(tags, index)
+      # For a long time 3-byte tags could have either 0x00 or 0xff
       tag =
-        # For a long time 3-byte tags could have either 0x00 or 0xff
         if last == <<0>> or last == <<255>> do
           name
         else
@@ -124,5 +123,4 @@ defmodule Roughtime.Wire do
       message::binary
     >>
   end
-
 end
