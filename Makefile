@@ -20,4 +20,4 @@ format:
 	@${BASE_CMD} mix format
 
 docs:
-	${BASE_CMD} mix docs
+	@${BASE_CMD} mix docs
