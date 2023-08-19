@@ -19,7 +19,7 @@ defmodule Roughtime.CertTest do
 
   test "updates keys" do
     {pub, pri} = :crypto.generate_key(:eddsa, :ed25519)
-	Roughtime.CertBox.update(pub, pri)
-	assert byte_size(Roughtime.CertBox.sign("updated")) == 64
+    Roughtime.CertBox.update(pub, pri)
+    assert byte_size(Roughtime.CertBox.sign("updated")) == 64
   end
 end

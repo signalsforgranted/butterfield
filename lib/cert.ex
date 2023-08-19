@@ -40,6 +40,7 @@ defmodule Roughtime.CertBox do
   def sign(payload) do
     [public_key, private_key] = Agent.get(__MODULE__, & &1)
     # :public_key shows up after compile, this suppresses warnings
+    # credo:disable-for-next-line
     apply(:public_key, :sign, [
       payload,
       :ignored,
