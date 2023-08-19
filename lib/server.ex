@@ -4,7 +4,17 @@ defmodule Roughtime.Server do
   @moduledoc false
   use GenServer
 
-  @default_port 2002
+  defp default_port do
+    Application.fetch_env!(:butterfield, :port)
+  end
+
+  defp public_key do
+    Application.fetch_env!(:butterfield, :public_key)
+  end
+
+  defp private_key do
+    Application.fetch_env!(:butterfield, :private_key)
+  end
 
   @doc """
   Starts the Roughtime server, parameters are placeholder and not implemented
@@ -16,13 +26,25 @@ defmodule Roughtime.Server do
 
   @impl true
   def init(_params) do
-    Logger.info("Starting server...")
-    :gen_udp.open(@default_port, [:binary, active: true])
+    if public_key() && private_key() do
+      Logger.info("Using Public Key: #{public_key()}")
+
+      Roughtime.CertBox.update(
+        Base.decode64!(public_key()),
+        Base.decode64!(private_key())
+      )
+    else
+      Logger.warning("No keys found, generating ephemeral pair...")
+      Roughtime.CertBox.generate()
+    end
+
+    Logger.info("Starting roughtime server on port #{default_port()}...")
+    :gen_udp.open(default_port(), [:binary, active: true])
   end
 
   @impl true
-  def handle_info({:udp, _socket, address, port, data}, state) do
-    Logger.debug("#{:inet.ntoa(address)}:#{port} - #{data}")
+  def handle_info({:udp, _socket, address, port, _data}, state) do
+    Logger.debug("Request from #{:inet.ntoa(address)}:#{port}")
     {:noreply, state}
   end
 end
