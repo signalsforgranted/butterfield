@@ -2,16 +2,32 @@ defmodule Roughtime.WireTest do
   use ExUnit.Case
   doctest Roughtime.Wire
 
-  test "parses -07 request" do
+  test "parses roughenough request" do
     payload =
-      "test/fixtures/-07-request.bin"
+      "test/fixtures/roughenough-request.bin"
       |> File.read!()
 
-    message = Roughtime.Wire.parse(payload)
+    message = Roughtime.Wire.parse_request(payload)
 
-    for tag_value <- message do
-      if not Enum.member?(["PAD", "NONC", "VER"], Enum.at(tag_value, 0)) do
-        flunk("Contains unexpected tag #{Enum.at(tag_value, 0)}")
+    for {tag, _value} <- message do
+      if not Enum.member?(["PAD", "NONC", "VER"], tag) do
+        flunk("Contains unexpected tag #{tag}")
+      end
+    end
+  end
+
+  test "parses roughenough response" do
+    payload =
+      "test/fixtures/roughenough-response.bin"
+      |> File.read!()
+
+    message = Roughtime.Wire.parse_message(payload)
+
+    for {tag, _value} <- message do
+      # This list matches what roughenough provides, but does not appear to
+      # match what draft -05 or -07 produce.
+      if not Enum.member?(["INDX", "CERT", "PATH", "SIG", "SREP"], tag) do
+        flunk("Contains unexpected tag #{tag}")
       end
     end
   end

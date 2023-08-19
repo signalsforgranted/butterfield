@@ -52,12 +52,15 @@ defmodule Roughtime.Wire do
   # "ROUGHTIM"
   @protocol_identifier 0x4D49544847554F52
 
+  # List of tags which can deep nest with other tags
+  @nestable_tags ["SREP", "CERT"]
+
   @doc """
-  Parse a packet.
+  Parse a request packet.
   Returns a list of lists, each with the tag as first element and value as second.
   """
-  @spec parse(binary()) :: list()
-  def parse(packet) when is_binary(packet) do
+  @spec parse_request(binary()) :: map()
+  def parse_request(packet) when is_binary(packet) do
     # Parse header and separate out message
     <<
       @protocol_identifier::unsigned-little-integer-size(64),
@@ -67,8 +70,16 @@ defmodule Roughtime.Wire do
 
     # It's possible we got more than the announced length, so truncate it...
     message = <<message::binary-size(length)>>
+    parse_message(message)
+  end
 
-    # Parse message block, everything here is 32 bit aligned, hence why you'll
+  @doc """
+  Parse a roughtime message.
+  Returns a map with tags as key, and values respectively.
+  """
+  @spec parse_message(binary()) :: map()
+  def parse_message(message) when is_binary(message) do
+    # Everything here is 32 bit aligned, hence why you'll
     # see that used a lot in this section.
     <<
       total_pairs::unsigned-little-integer-size(32),
@@ -107,8 +118,17 @@ defmodule Roughtime.Wire do
           Enum.at(tags, index)
         end
 
-      [tag, :binary.part(values, Enum.at(offset, 0), len)]
+      # Nest into tags that may contain other tags
+      value =
+        if Enum.member?(@nestable_tags, tag) do
+          parse_message(:binary.part(values, Enum.at(offset, 0), len))
+        else
+          :binary.part(values, Enum.at(offset, 0), len)
+        end
+
+      [tag, value]
     end)
+    |> Map.new(fn [k, v] -> {k, v} end)
   end
 
   @doc """
