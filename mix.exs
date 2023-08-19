@@ -6,6 +6,9 @@ defmodule App.MixProject do
       app: :butterfield,
       version: "0.1.0",
       elixir: "~> 1.15",
+      elixirc_options: [
+        warnings_as_errors: true
+      ],
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       aliases: aliases()
@@ -25,6 +28,7 @@ defmodule App.MixProject do
     [
       # Developer
       {:dialyxir, "~> 1.3.0", only: [:dev], runtime: false},
+	  {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.30.3", only: [:dev], runtime: false}
     ]
   end

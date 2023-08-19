@@ -14,6 +14,7 @@ test:
 
 fulltest:
 	-@${BASE_CMD} mix dialyzer
+	-@${BASE_CMD} mix credo --strict
 	-@${BASE_CMD} mix test --cover
 
 format:
