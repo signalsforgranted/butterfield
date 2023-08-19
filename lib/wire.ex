@@ -132,11 +132,21 @@ defmodule Roughtime.Wire do
   end
 
   @doc """
+  Parse an older, or Google formatted payload.
+  Unlike newer I-D versions, requets do not have the protocol identifier,
+  Amongst other differences.
+  """
+  @spec parse_google(binary()) :: map()
+  def parse_google(message) do
+    parse_message(message)
+  end
+
+  @doc """
   Wrap the message into the rest of the structure for sending. Message must be
   binary and already serialised.
   """
-  @spec generate_packet(binary()) :: binary()
-  def generate_packet(message) do
+  @spec generate_request(binary()) :: binary()
+  def generate_request(message) do
     <<
       @protocol_identifier::unsigned-little-integer-size(64),
       byte_size(message)::unsigned-little-integer-size(32),

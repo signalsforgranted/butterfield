@@ -31,4 +31,20 @@ defmodule Roughtime.WireTest do
       end
     end
   end
+
+  test "parse google request" do
+    payload =
+      "test/fixtures/google-request.bin"
+      |> File.read!()
+
+    message = Roughtime.Wire.parse_google(payload)
+
+    for {tag, _value} <- message do
+      if not Enum.member?(["PAD", "NONC"], tag) do
+        flunk("Contains unexpected tag #{tag}")
+      end
+    end
+
+    assert byte_size(Map.get(message, "NONC")) == 64
+  end
 end
