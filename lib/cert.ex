@@ -2,11 +2,10 @@ defmodule Roughtime.CertBox do
   use Agent
 
   @moduledoc """
-  Handle the ed25519 certificate. This Agent aims to keep the private (and
-  public) keys in memory but try to not expose the private key. This of course
-  will not stop any direct memory attacks or privileged attackers able to
-  inspect the running BEAM process, but this may just prevent the author from
-  writing leaky code.
+  Handle the ed25519 certificate. This Agent aims to keep the keys in memory but
+  try to not expose the private key. Of course it will not stop any direct
+  memory attacks or privileged attackers able to inspect the running BEAM
+  process, but this may just prevent the author from writing leaky code.
   """
   @spec start_link(list()) :: Agent.on_start()
   def start_link(certs \\ []) do
@@ -20,13 +19,19 @@ defmodule Roughtime.CertBox do
   end
 
   @doc """
-  No keys? No problem, generate a set and update state. This is only useful if
+  No keys? No problem, generate a set and update state. This is useful if
   you are needing ephemeral keys, such as during testing.
   ⚠️  **This will replace any keys already in place! **
   """
   @spec generate() :: :ok
   def generate do
     {public_key, private_key} = :crypto.generate_key(:eddsa, :ed25519)
+    Agent.update(__MODULE__, fn _state -> [public_key, private_key] end)
+  end
+
+  @doc "Update the keys in place with your own."
+  @spec update(binary(), binary()) :: :ok
+  def update(public_key, private_key) do
     Agent.update(__MODULE__, fn _state -> [public_key, private_key] end)
   end
 
