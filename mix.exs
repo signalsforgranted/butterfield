@@ -26,10 +26,10 @@ defmodule App.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      # Developer
       {:dialyxir, "~> 1.3.0", only: [:dev], runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
-      {:ex_doc, "~> 0.30.3", only: [:dev], runtime: false}
+      {:ex_doc, "~> 0.30.3", only: [:dev], runtime: false},
+      {:benchee, "~> 1.1"}
     ]
   end
 
