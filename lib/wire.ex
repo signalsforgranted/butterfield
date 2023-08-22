@@ -53,7 +53,7 @@ defmodule Roughtime.Wire do
   @protocol_identifier 0x4D49544847554F52
 
   # List of tags which can deep nest with other tags
-  @nestable_tags ["SREP", "CERT"]
+  @nestable_tags [:SREP, :CERT]
 
   @doc """
   Parse a request packet.
@@ -120,7 +120,7 @@ defmodule Roughtime.Wire do
 
       # Nest into tags that may contain other tags
       value =
-        if Enum.member?(@nestable_tags, tag) do
+        if Enum.member?(@nestable_tags, String.to_atom(tag)) do
           parse_message(:binary.part(values, Enum.at(offset, 0), len))
         else
           :binary.part(values, Enum.at(offset, 0), len)
@@ -128,7 +128,7 @@ defmodule Roughtime.Wire do
 
       [tag, value]
     end)
-    |> Map.new(fn [k, v] -> {k, v} end)
+    |> Map.new(fn [k, v] -> {String.to_atom(k), v} end)
   end
 
   @doc """
@@ -142,15 +142,69 @@ defmodule Roughtime.Wire do
   end
 
   @doc """
-  Wrap the message into the rest of the structure for sending. Message must be
-  binary and already serialised.
+  Wrap the message into the rest of the structure for sending reuqests.
   """
-  @spec generate_request(binary()) :: binary()
+  @spec generate_request(map()) :: binary()
   def generate_request(message) do
+    payload = generate_message(message)
+
     <<
       @protocol_identifier::unsigned-little-integer-size(64),
-      byte_size(message)::unsigned-little-integer-size(32),
-      message::binary
+      byte_size(payload)::unsigned-little-integer-size(32),
+      payload::binary
     >>
+  end
+
+  @doc """
+  Keys should be valid tags as strings and not atoms, without any null byte
+  padding if shorter than 4 bytes in length.
+  The maximum length should be no2dd greater than the originating request packet -
+  this in turn will define how much padding will be applied.
+  """
+  @spec generate_message(map()) :: binary()
+  def generate_message(message) when is_map(message) do
+    total_pairs = length(Map.keys(message))
+
+    message =
+      Enum.map(message, fn {tag, value} ->
+        value =
+          if Enum.member?(@nestable_tags, tag) and is_map(value) do
+            generate_message(value)
+          else
+            value
+          end
+
+        {tag, value}
+      end)
+
+    {tags, values} = Enum.unzip(message)
+
+    # Tags - 3 byte tags need padding with 0x0.
+    tags =
+      Enum.map(tags, fn tag ->
+        tag = Atom.to_string(tag)
+
+        if String.length(tag) == 3 do
+          tag <> <<0>>
+        else
+          tag
+        end
+      end)
+
+    # increment for the length of each respective value.
+    offsets =
+      values
+      |> Enum.map(fn value -> byte_size(value) end)
+      # N-1, we don't need to carry last length
+      |> Enum.drop(-1)
+
+    offsets =
+      Enum.scan(offsets, &+/2)
+      |> Enum.map(fn offset -> <<offset::unsigned-little-integer-size(32)>> end)
+
+    <<total_pairs::unsigned-little-integer-size(32)>> <>
+      :erlang.list_to_binary(offsets) <>
+      :erlang.list_to_binary(tags) <>
+      :erlang.list_to_binary(values)
   end
 end
