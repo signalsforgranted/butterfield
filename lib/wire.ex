@@ -53,7 +53,7 @@ defmodule Roughtime.Wire do
   @protocol_identifier 0x4D49544847554F52
 
   # List of tags which can deep nest with other tags
-  @nestable_tags [:SREP, :CERT]
+  @nestable_tags [:SREP, :CERT, :DELE]
 
   @doc """
   Parse a request packet.

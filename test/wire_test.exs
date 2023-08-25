@@ -58,9 +58,21 @@ defmodule Roughtime.WireTest do
   test "generates nested structure" do
     message = %{
       VER: <<1, 0, 0, 0>>,
+	  INDX: <<0,0,0,0>>,
+      PATH: "",
+      SREP: %{
+        ROOT: <<0>>,
+        MIDP: <<0>>,
+        RADI: <<0>>
+      },
       CERT: %{
-        DELE: "dele",
-        SIG: <<0>>
+        DELE: %{
+          MINT: <<0>>,
+          MAXT: <<0>>,
+          PUBK: "public key"
+        },
+        SIG: <<0>>,
+        NONC: :crypto.strong_rand_bytes(64)
       }
     }
 
