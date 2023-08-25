@@ -35,11 +35,16 @@ defmodule Roughtime.CertBox do
     Agent.update(__MODULE__, fn _state -> [public_key, private_key] end)
   end
 
-  @doc "Sign a given payload with the key material."
+  @doc """
+  Sign a given payload with the key material.
+
+  ⚠️ This method although it will sign, does not yet appear to support context
+  strings, which are required by Roughtime.
+  """
   @spec sign(any()) :: binary()
   def sign(payload) do
     [public_key, private_key] = Agent.get(__MODULE__, & &1)
-    # :public_key shows up after compile, this suppresses warnings
+    # :public_key is available at runtime after compile
     # credo:disable-for-next-line
     apply(:public_key, :sign, [
       payload,
