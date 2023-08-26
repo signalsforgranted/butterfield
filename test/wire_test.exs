@@ -7,7 +7,7 @@ defmodule Roughtime.WireTest do
       "test/fixtures/roughenough-request.bin"
       |> File.read!()
 
-    message = Roughtime.Wire.parse_request(payload)
+    message = Roughtime.Wire.parse(payload)
 
     for {tag, _value} <- message do
       if not Enum.member?([:PAD, :NONC, :VER], tag) do
@@ -18,15 +18,15 @@ defmodule Roughtime.WireTest do
 
   test "parses roughenough response" do
     payload =
-      "test/fixtures/roughenough-response.bin"
+      "test/fixtures/roughenough-response-direct.bin"
       |> File.read!()
 
-    message = Roughtime.Wire.parse_message(payload)
+    message = Roughtime.Wire.parse(payload)
 
     for {tag, _value} <- message do
       # This list matches what roughenough provides, but does not appear to
       # match what draft -05 or -07 produce.
-      if not Enum.member?([:INDX, :CERT, :PATH, :SIG, :SREP], tag) do
+      if not Enum.member?([:INDX, :CERT, :PATH, :SIG, :SREP, :VER], tag) do
         flunk("Contains unexpected tag #{tag}")
       end
     end
@@ -51,14 +51,14 @@ defmodule Roughtime.WireTest do
   test "generates valid request" do
     message = %{TEST: "test", VER: <<1, 0, 0, 0>>, NONC: :crypto.strong_rand_bytes(64)}
     generated = Roughtime.Wire.generate_request(message)
-    result = Roughtime.Wire.parse_request(generated)
+    result = Roughtime.Wire.parse(generated)
     assert result == message
   end
 
   test "generates nested structure" do
     message = %{
       VER: <<1, 0, 0, 0>>,
-	  INDX: <<0,0,0,0>>,
+      INDX: <<0,0,0,0>>,
       PATH: "",
       SREP: %{
         ROOT: <<0>>,
@@ -77,7 +77,7 @@ defmodule Roughtime.WireTest do
     }
 
     generated = Roughtime.Wire.generate_request(message)
-    result = Roughtime.Wire.parse_request(generated)
+    result = Roughtime.Wire.parse(generated)
     assert result == message
   end
 end

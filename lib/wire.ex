@@ -59,8 +59,8 @@ defmodule Roughtime.Wire do
   Parse a request packet.
   Returns a list of lists, each with the tag as first element and value as second.
   """
-  @spec parse_request(binary()) :: map()
-  def parse_request(packet) when is_binary(packet) do
+  @spec parse(binary()) :: map()
+  def parse(packet) when is_binary(packet) do
     # Parse header and separate out message
     <<
       @protocol_identifier::unsigned-little-integer-size(64),
