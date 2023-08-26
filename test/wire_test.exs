@@ -32,6 +32,23 @@ defmodule Roughtime.WireTest do
     end
   end
 
+  test "parses cloudflare response" do
+    payload =
+      "test/fixtures/cloudflare-response.bin"
+      |> File.read!()
+
+    message = Roughtime.Wire.parse(payload)
+	IO.inspect message
+    for {tag, _value} <- message do
+      # This list matches what roughenough provides, but does not appear to
+      # match what draft -05 or -07 produce.
+      if not Enum.member?([:INDX, :CERT, :PATH, :SIG, :SREP, :VER], tag) do
+        flunk("Contains unexpected tag #{tag}")
+      end
+    end
+
+  end
+
   test "parse google request" do
     payload =
       "test/fixtures/google-request.bin"
