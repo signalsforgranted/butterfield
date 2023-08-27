@@ -38,7 +38,7 @@ defmodule Roughtime.WireTest do
       |> File.read!()
 
     message = Roughtime.Wire.parse(payload)
-	IO.inspect message
+
     for {tag, _value} <- message do
       # This list matches what roughenough provides, but does not appear to
       # match what draft -05 or -07 produce.
@@ -46,7 +46,6 @@ defmodule Roughtime.WireTest do
         flunk("Contains unexpected tag #{tag}")
       end
     end
-
   end
 
   test "parse google request" do
@@ -75,7 +74,7 @@ defmodule Roughtime.WireTest do
   test "generates nested structure" do
     message = %{
       VER: <<1, 0, 0, 0>>,
-      INDX: <<0,0,0,0>>,
+      INDX: <<0, 0, 0, 0>>,
       PATH: "",
       SREP: %{
         ROOT: <<0>>,
@@ -96,5 +95,19 @@ defmodule Roughtime.WireTest do
     generated = Roughtime.Wire.generate_request(message)
     result = Roughtime.Wire.parse(generated)
     assert result == message
+  end
+
+  test "parses Unix timestamp" do
+    dt = DateTime.now!("Etc/UTC")
+    unix_test = <<DateTime.to_unix(dt, :microsecond)::unsigned-little-integer-size(64)>>
+    unix_got = Roughtime.Wire.parse_timestamp(unix_test)
+    assert unix_got == dt
+  end
+
+  test "parses MJD timestamp" do
+    mjd_test = <<205, 24, 140, 230, 18, 23, 235, 0>>
+    {:ok, expected, 0} = DateTime.from_iso8601("2023-08-27T22:32:57.352397Z")
+    mjd_got = Roughtime.Wire.parse_timestamp(mjd_test)
+    assert mjd_got == expected
   end
 end

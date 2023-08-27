@@ -1,4 +1,6 @@
 defmodule Roughtime.Wire do
+  import Bitwise
+
   @moduledoc """
   Handle all of the parsing and generation of packets.
 
@@ -54,6 +56,13 @@ defmodule Roughtime.Wire do
 
   # List of tags which can deep nest with other tags
   @nestable_tags [:SREP, :CERT, :DELE]
+
+  # Timestamps bigger than some large number (in this case Unix Epoch rollover)
+  # are more likely to be MJD + Day milliseconds per IETF spec.
+  @timestamp_guestimate 2_147_483_647_000_000
+
+  # Days between Modified Julian Day (1858-11-17) and Unix Epoch (1970-01-01)
+  @mjd_offset 40_587
 
   @doc """
   Parse a request packet.
@@ -206,5 +215,33 @@ defmodule Roughtime.Wire do
       :erlang.list_to_binary(offsets) <>
       :erlang.list_to_binary(tags) <>
       :erlang.list_to_binary(values)
+  end
+
+  @doc """
+  Parse timestamp values. With implmentations multiple timestamps are being
+  produced, it appears either:
+  * Classic using UNIX epoch
+  * MJD + Day milliseconds
+  We do clever tricks to guess which.
+  """
+  @spec parse_timestamp(binary()) :: any()
+  def parse_timestamp(timestamp) do
+    <<ts_int::unsigned-little-integer-size(64)>> = timestamp
+
+    # It's probably MJD + msec?
+    {:ok, dt} =
+      if ts_int > @timestamp_guestimate do
+        # Most meaningful 3 bytes are MJD, remaining 5 are msec of current day.
+        mjd_day = ts_int >>> 40
+        msec = ts_int &&& 0xFFFFFFFFFF
+        today = (mjd_day - @mjd_offset) * 86_400_000_000
+
+        DateTime.from_unix(today + msec, :microsecond)
+        # Just assume it's UNIX Epoch
+      else
+        DateTime.from_unix(ts_int, :microsecond)
+      end
+
+    dt
   end
 end
