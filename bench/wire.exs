@@ -1,3 +1,4 @@
+Incendium.Application.start(nil, nil)
 
 Incendium.run(
   %{
