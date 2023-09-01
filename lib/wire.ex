@@ -205,17 +205,25 @@ defmodule Roughtime.Wire do
   end
 
   @doc """
-  Wrap the message into the rest of the structure for sending reuqests.
+  Wrap the message into the rest of the structure for sending reuqests. By
+  default we generate older messages not based on the I-D, and with Unix epoch
+  based timestamps.
   """
-  @spec generate_request(map()) :: binary()
-  def generate_request(message) do
-    payload = generate_message(message)
+  @spec generate(map(), atom()) :: binary()
+  def generate(message, protocol \\ :ietf) do
+    case protocol do
+      :ietf ->
+        payload = generate_message(message, :mjd)
 
-    <<
-      @protocol_identifier::unsigned-little-integer-size(64),
-      byte_size(payload)::unsigned-little-integer-size(32),
-      payload::binary
-    >>
+        <<
+          @protocol_identifier::unsigned-little-integer-size(64),
+          byte_size(payload)::unsigned-little-integer-size(32),
+          payload::binary
+        >>
+
+      _ ->
+        generate_message(message, :unix)
+    end
   end
 
   @doc """
@@ -224,8 +232,8 @@ defmodule Roughtime.Wire do
   The maximum length should be no greater than the originating request packet -
   this in turn will define how much padding will be applied.
   """
-  @spec generate_message(map()) :: binary()
-  def generate_message(message) when is_map(message) do
+  @spec generate_message(map(), atom()) :: binary()
+  def generate_message(message, ts_format \\ :unix) when is_map(message) do
     total_pairs = length(Map.keys(message))
 
     message =
@@ -238,7 +246,7 @@ defmodule Roughtime.Wire do
           else
             # We're too nested deep, this code needs to be refactored
             case tag do
-              t when t in [:MIDP, :MINT, :MAXT] -> generate_timestamp(value)
+              t when t in [:MIDP, :MINT, :MAXT] -> generate_timestamp(value, ts_format)
               _ -> value
             end
           end

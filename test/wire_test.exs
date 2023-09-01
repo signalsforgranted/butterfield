@@ -66,7 +66,7 @@ defmodule Roughtime.WireTest do
 
   test "generates valid request" do
     message = %{TEST: "test", VER: <<1, 0, 0, 0>>, NONC: :crypto.strong_rand_bytes(64)}
-    generated = Roughtime.Wire.generate_request(message)
+    generated = Roughtime.Wire.generate(message)
     result = Roughtime.Wire.parse(generated)
     assert result == message
   end
@@ -92,7 +92,7 @@ defmodule Roughtime.WireTest do
       }
     }
 
-    generated = Roughtime.Wire.generate_request(message)
+    generated = Roughtime.Wire.generate(message)
     result = Roughtime.Wire.parse(generated)
     assert result == message
   end
