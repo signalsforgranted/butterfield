@@ -137,7 +137,7 @@ defmodule Roughtime.Wire do
 
       [tag, value]
     end)
-    |> Map.new(fn [k, v] -> {String.to_atom(k), v} end)
+    |> Map.new(fn [k, v] -> {String.to_existing_atom(k), v} end)
   end
 
   @doc """
@@ -218,30 +218,55 @@ defmodule Roughtime.Wire do
   end
 
   @doc """
-  Parse timestamp values. With implmentations multiple timestamps are being
-  produced, it appears either:
-  * Classic using UNIX epoch
-  * MJD + Day milliseconds
-  We do clever tricks to guess which.
+  Parse timestamp values.
+  Timestamps are either provided with UNIX Epoch (midnight 1970-01-01) values,
+  or they use Modified Julian Date with today's total microseconds interleaved.
+  It's also possible for implementations to juse use maximum 64bit integer value
+  as well, particularly for expiration or unknown values. To figure out which is
+  which, we assume any timestamp greater than UNIX epoch but lower than highest
+  date is MJD, and handle those greater than the highest date is invalid.
   """
-  @spec parse_timestamp(binary()) :: any()
+  @spec parse_timestamp(binary()) :: Calendar.datetime()
   def parse_timestamp(timestamp) do
     <<ts_int::unsigned-little-integer-size(64)>> = timestamp
 
-    # It's probably MJD + msec?
     {:ok, dt} =
-      if ts_int > @timestamp_guestimate do
-        # Most meaningful 3 bytes are MJD, remaining 5 are msec of current day.
-        mjd_day = ts_int >>> 40
-        msec = ts_int &&& 0xFFFFFFFFFF
-        today = (mjd_day - @mjd_offset) * 86_400_000_000
+      cond do
+        # Likely Unix Epoch
+        ts_int < @timestamp_guestimate ->
+          DateTime.from_unix(ts_int, :microsecond)
 
-        DateTime.from_unix(today + msec, :microsecond)
-        # Just assume it's UNIX Epoch
-      else
-        DateTime.from_unix(ts_int, :microsecond)
+        # Likely MJD
+        ts_int > @timestamp_guestimate and ts_int < @timestamp_max ->
+          # Most meaningful 3 bytes are MJD, remaining 5 are msec of current day.
+          mjd_day = ts_int >>> 40
+          msec = ts_int &&& 0xFFFFFFFFFF
+          today = (mjd_day - @mjd_offset) * 86_400_000_000
+          DateTime.from_unix(today + msec, :microsecond)
+
+        # Likely invalid
+        ts_int > @timestamp_max ->
+          DateTime.from_unix(@timestamp_max, :microsecond)
       end
 
     dt
+  end
+
+  @doc """
+  Generate a timestamp
+  """
+  @spec generate_timestamp(Calendar.datetime(), atom()) :: binary()
+  def generate_timestamp(timestamp, format \\ :unix) do
+    case format do
+      :unix ->
+        unix_secs = DateTime.to_unix(timestamp, :microsecond)
+        <<unix_secs::unsigned-little-integer-size(64)>>
+      :mjd ->
+        mjd_day = Date.diff(DateTime.to_date(timestamp), @mjd)
+        {secs, msecs} = Time.to_seconds_after_midnight(DateTime.to_time(timestamp))
+        msecs = (secs * 1000000) + msecs
+        ts = (mjd_day <<< 40) + msecs
+        <<ts::unsigned-little-integer-size(64)>>
+    end
   end
 end
