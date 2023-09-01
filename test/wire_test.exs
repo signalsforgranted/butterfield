@@ -18,7 +18,7 @@ defmodule Roughtime.WireTest do
 
   test "parses roughenough response" do
     payload =
-      "test/fixtures/roughenough-response-direct.bin"
+      "test/fixtures/roughenough-response.bin"
       |> File.read!()
 
     message = Roughtime.Wire.parse(payload)
