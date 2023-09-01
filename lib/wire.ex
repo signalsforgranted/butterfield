@@ -94,12 +94,12 @@ defmodule Roughtime.Wire do
   end
 
   @doc """
-  Parse an older, or Google formatted payload.
+  Parse an older formatted payload.
   Unlike newer I-D versions, requets do not have the protocol identifier,
   Amongst other differences.
   """
-  @spec parse_google(binary()) :: map()
-  def parse_google(message) do
+  @spec parse_classic(binary()) :: map()
+  def parse_classic(message) do
     parse_message(message)
   end
 

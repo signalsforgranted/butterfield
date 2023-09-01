@@ -48,12 +48,12 @@ defmodule Roughtime.WireTest do
     end
   end
 
-  test "parse google request" do
+  test "parse classic request" do
     payload =
       "test/fixtures/google-request.bin"
       |> File.read!()
 
-    message = Roughtime.Wire.parse_google(payload)
+    message = Roughtime.Wire.parse_classic(payload)
 
     for {tag, _value} <- message do
       if not Enum.member?([:PAD, :NONC], tag) do
