@@ -5,7 +5,9 @@ defmodule Roughtime.Wire do
   Handle all of the parsing and generation of packets.
 
   Roughtime packets are comprised of a constant header, the length (as they are
-  padded to MTU or nearabouts) and the rest of the payload.
+  padded to MTU or nearabouts) and the rest of the payload. This payload header
+  is only present in IETF implementations of the specification, whereas just the
+  message payload is used.
 
   ```
   0                   1                   2                   3
@@ -50,6 +52,8 @@ defmodule Roughtime.Wire do
   |                                                               |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   ```
+  It's worth noting that certain tags can have values of messages themselves,
+  allowing for unlimited depth in nesting of tags.
   """
   # "ROUGHTIM"
   @protocol_identifier 0x4D49544847554F52
@@ -86,6 +90,16 @@ defmodule Roughtime.Wire do
 
     # It's possible we got more than the announced length, so truncate it...
     message = <<message::binary-size(length)>>
+    parse_message(message)
+  end
+
+  @doc """
+  Parse an older, or Google formatted payload.
+  Unlike newer I-D versions, requets do not have the protocol identifier,
+  Amongst other differences.
+  """
+  @spec parse_google(binary()) :: map()
+  def parse_google(message) do
     parse_message(message)
   end
 
@@ -155,13 +169,39 @@ defmodule Roughtime.Wire do
   end
 
   @doc """
-  Parse an older, or Google formatted payload.
-  Unlike newer I-D versions, requets do not have the protocol identifier,
-  Amongst other differences.
+  Parse timestamp values.
+  Timestamps are either provided with UNIX Epoch (midnight 1970-01-01) values,
+  or they use Modified Julian Date with today's total microseconds interleaved.
+  It's also possible for implementations to juse use maximum 64bit integer value
+  as well, particularly for expiration or unknown values. To figure out which is
+  which, we assume any timestamp greater than UNIX epoch but lower than highest
+  date is MJD, and handle those greater than the highest date is invalid.
   """
-  @spec parse_google(binary()) :: map()
-  def parse_google(message) do
-    parse_message(message)
+  @spec parse_timestamp(binary()) :: Calendar.datetime()
+  def parse_timestamp(timestamp) do
+    <<ts_int::unsigned-little-integer-size(64)>> = timestamp
+
+    {:ok, dt} =
+      cond do
+        # Likely Unix Epoch
+        ts_int < @timestamp_guestimate ->
+          DateTime.from_unix(ts_int, :microsecond)
+
+        # Likely MJD
+        ts_int > @timestamp_guestimate and ts_int < @timestamp_max ->
+          # Most meaningful 3 bytes are MJD, remaining 5 are msec of current
+          # day, hence why we bitwise right shift over.
+          mjd_day = ts_int >>> 40
+          msec = ts_int &&& 0xFFFFFFFFFF
+          today = (mjd_day - @mjd_offset) * 86_400_000_000
+          DateTime.from_unix(today + msec, :microsecond)
+
+        # Likely invalid
+        ts_int > @timestamp_max ->
+          DateTime.from_unix(@timestamp_max, :microsecond)
+      end
+
+    dt
   end
 
   @doc """
@@ -235,41 +275,6 @@ defmodule Roughtime.Wire do
       :erlang.list_to_binary(offsets) <>
       :erlang.list_to_binary(tags) <>
       :erlang.list_to_binary(values)
-  end
-
-  @doc """
-  Parse timestamp values.
-  Timestamps are either provided with UNIX Epoch (midnight 1970-01-01) values,
-  or they use Modified Julian Date with today's total microseconds interleaved.
-  It's also possible for implementations to juse use maximum 64bit integer value
-  as well, particularly for expiration or unknown values. To figure out which is
-  which, we assume any timestamp greater than UNIX epoch but lower than highest
-  date is MJD, and handle those greater than the highest date is invalid.
-  """
-  @spec parse_timestamp(binary()) :: Calendar.datetime()
-  def parse_timestamp(timestamp) do
-    <<ts_int::unsigned-little-integer-size(64)>> = timestamp
-
-    {:ok, dt} =
-      cond do
-        # Likely Unix Epoch
-        ts_int < @timestamp_guestimate ->
-          DateTime.from_unix(ts_int, :microsecond)
-
-        # Likely MJD
-        ts_int > @timestamp_guestimate and ts_int < @timestamp_max ->
-          # Most meaningful 3 bytes are MJD, remaining 5 are msec of current day.
-          mjd_day = ts_int >>> 40
-          msec = ts_int &&& 0xFFFFFFFFFF
-          today = (mjd_day - @mjd_offset) * 86_400_000_000
-          DateTime.from_unix(today + msec, :microsecond)
-
-        # Likely invalid
-        ts_int > @timestamp_max ->
-          DateTime.from_unix(@timestamp_max, :microsecond)
-      end
-
-    dt
   end
 
   @doc """
