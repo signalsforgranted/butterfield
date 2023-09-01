@@ -78,13 +78,13 @@ defmodule Roughtime.WireTest do
       PATH: "",
       SREP: %{
         ROOT: <<0>>,
-        MIDP: <<0>>,
+        MIDP: DateTime.now!("Etc/UTC"),
         RADI: <<0>>
       },
       CERT: %{
         DELE: %{
-          MINT: <<0>>,
-          MAXT: <<0>>,
+          MINT: ~U[2000-01-01 00:00:00.000000Z],
+          MAXT: ~U[2049-12-31 23:59:59.000000Z],
           PUBK: "public key"
         },
         SIG: <<0>>,
@@ -97,17 +97,17 @@ defmodule Roughtime.WireTest do
     assert result == message
   end
 
-  test "parses Unix timestamp" do
+  test "generates and parses Unix timestamp" do
     dt = DateTime.now!("Etc/UTC")
-    unix_test = <<DateTime.to_unix(dt, :microsecond)::unsigned-little-integer-size(64)>>
-    unix_got = Roughtime.Wire.parse_timestamp(unix_test)
+    unix_ts = Roughtime.Wire.generate_timestamp(dt, :unix)
+    unix_got = Roughtime.Wire.parse_timestamp(unix_ts)
     assert unix_got == dt
   end
 
   test "parses MJD timestamp" do
-    mjd_test = <<205, 24, 140, 230, 18, 23, 235, 0>>
-    {:ok, expected, 0} = DateTime.from_iso8601("2023-08-27T22:32:57.352397Z")
-    mjd_got = Roughtime.Wire.parse_timestamp(mjd_test)
-    assert mjd_got == expected
+    dt = DateTime.now!("Etc/UTC")
+    mjd_ts = Roughtime.Wire.generate_timestamp(dt, :mjd)
+    mjd_got = Roughtime.Wire.parse_timestamp(mjd_ts)
+    assert mjd_got == dt
   end
 end

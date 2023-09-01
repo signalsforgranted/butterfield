@@ -57,9 +57,16 @@ defmodule Roughtime.Wire do
   # List of tags which can deep nest with other tags
   @nestable_tags [:SREP, :CERT, :DELE]
 
-  # Timestamps bigger than some large number (in this case Unix Epoch rollover)
-  # are more likely to be MJD + Day milliseconds per IETF spec.
-  @timestamp_guestimate 2_147_483_647_000_000
+  # Guestimate timestamp to guess which epoch, see parse_timestamp/1
+  # This integer represents 2099-12-31T23:59:59Z
+  @timestamp_guestimate 4_102_444_799_000_000
+
+  # Largest timestamp supported by DateTime as microseconds from Unix epoch
+  # This integer represents 9999-12-31T23:59:59Z
+  @timestamp_max 253_402_300_799_000_000
+
+  # Modified Julian Date
+  @mjd ~D[1858-11-17]
 
   # Days between Modified Julian Day (1858-11-17) and Unix Epoch (1970-01-01)
   @mjd_offset 40_587
@@ -135,6 +142,13 @@ defmodule Roughtime.Wire do
           :binary.part(values, Enum.at(offset, 0), len)
         end
 
+      # Parse the value out where we require non-binary types used
+      value =
+        case tag do
+          t when t in ["MIDP", "MINT", "MAXT"] -> parse_timestamp(value)
+          _ -> value
+        end
+
       [tag, value]
     end)
     |> Map.new(fn [k, v] -> {String.to_existing_atom(k), v} end)
@@ -167,7 +181,7 @@ defmodule Roughtime.Wire do
   @doc """
   Keys should be valid tags as strings and not atoms, without any null byte
   padding if shorter than 4 bytes in length.
-  The maximum length should be no2dd greater than the originating request packet -
+  The maximum length should be no greater than the originating request packet -
   this in turn will define how much padding will be applied.
   """
   @spec generate_message(map()) :: binary()
@@ -176,11 +190,17 @@ defmodule Roughtime.Wire do
 
     message =
       Enum.map(message, fn {tag, value} ->
+        # Values have to processed at same time as tags because we need to know
+        # the tag at time for validation.
         value =
           if Enum.member?(@nestable_tags, tag) and is_map(value) do
             generate_message(value)
           else
-            value
+            # We're too nested deep, this code needs to be refactored
+            case tag do
+              t when t in [:MIDP, :MINT, :MAXT] -> generate_timestamp(value)
+              _ -> value
+            end
           end
 
         {tag, value}
@@ -261,10 +281,11 @@ defmodule Roughtime.Wire do
       :unix ->
         unix_secs = DateTime.to_unix(timestamp, :microsecond)
         <<unix_secs::unsigned-little-integer-size(64)>>
+
       :mjd ->
         mjd_day = Date.diff(DateTime.to_date(timestamp), @mjd)
         {secs, msecs} = Time.to_seconds_after_midnight(DateTime.to_time(timestamp))
-        msecs = (secs * 1000000) + msecs
+        msecs = secs * 1_000_000 + msecs
         ts = (mjd_day <<< 40) + msecs
         <<ts::unsigned-little-integer-size(64)>>
     end
