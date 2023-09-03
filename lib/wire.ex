@@ -105,10 +105,20 @@ defmodule Roughtime.Wire do
 
   @doc """
   Parse a roughtime message.
-  Returns a map with tags as key, and values respectively.
+  By default expand parsing all nested tags, use `parse_message(payload, false)`
+  to not iterate nested structures.
   """
   @spec parse_message(binary()) :: map()
   def parse_message(message) when is_binary(message) do
+    parse_message(message, true)
+  end
+
+  @doc """
+  Parse a roughtime message.
+  Returns a map with tags as key, and values respectively.
+  """
+  @spec parse_message(binary(), boolean()) :: map()
+  def parse_message(message, recurse) when is_binary(message) do
     # Everything here is 32 bit aligned, hence why you'll
     # see that used a lot in this section.
     <<
@@ -150,7 +160,7 @@ defmodule Roughtime.Wire do
 
       # Nest into tags that may contain other tags
       value =
-        if Enum.member?(@nestable_tags, String.to_atom(tag)) do
+        if recurse and Enum.member?(@nestable_tags, String.to_atom(tag)) do
           parse_message(:binary.part(values, Enum.at(offset, 0), len))
         else
           :binary.part(values, Enum.at(offset, 0), len)
