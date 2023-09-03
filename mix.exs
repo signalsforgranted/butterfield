@@ -17,15 +17,13 @@ defmodule App.MixProject do
     ]
   end
 
-  # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger, :asn1, :public_key],
+      extra_applications: [:logger],
       mod: {Roughtime.Application, []}
     ]
   end
 
-  # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
       # Application
