@@ -2,24 +2,18 @@ defmodule Roughtime.CertTest do
   use ExUnit.Case, async: true
 
   setup do
-    {:ok, box} = Roughtime.CertBox.start_link([])
+    {:ok, box} = Roughtime.CertBox.start_link(%{})
     %{box: box}
   end
 
+  @moduletag :capture_log
   test "generates new keys" do
-    assert Roughtime.CertBox.public_key() == nil
-    Roughtime.CertBox.generate()
-    assert Roughtime.CertBox.public_key() != nil
+    {_test_pubkey, test_prikey} = :libdecaf_curve25519.eddsa_keypair()
+    Roughtime.CertBox.generate(test_prikey)
+    cert = Roughtime.CertBox.cert()
+    assert cert != nil
+    pubkey = Roughtime.CertBox.pubkey()
+    assert byte_size(pubkey) == 32
   end
 
-  test "generates a signature" do
-    Roughtime.CertBox.generate()
-    assert byte_size(Roughtime.CertBox.sign("test")) == 64
-  end
-
-  test "updates keys" do
-    {pub, pri} = :crypto.generate_key(:eddsa, :ed25519)
-    Roughtime.CertBox.update(pub, pri)
-    assert byte_size(Roughtime.CertBox.sign("updated")) == 64
-  end
 end

@@ -9,11 +9,17 @@ config :butterfield,
   # UDP Port to listen on
   port: String.to_integer(System.get_env("BTRFLD_PORT") || "2002"),
 
-  # Keys:
+  # Long-term keys:
   # Both must be stored with Base 64 encoding
   #
-  # Public ed25519 key
+  # Long-term public ed25519 key
   public_key: System.get_env("BTRFLD_PUBKEY") || nil,
 
-  # Private ed25519 key
-  private_key: System.get_env("BTRFLD_PRIKEY") || nil
+  # Long-term private ed25519 key
+  # ⚠️  This may be removed once the system is running to minimise exposure risk
+  private_key: System.get_env("BTRFLD_PRIKEY") || nil,
+
+  # At start up we generate an ephemeral cert which is signed by the long term
+  # public key. This value in days defines the min/max time for that cert, using
+  # the time of Roughtime.CertBox.start_link/1 as the min.
+  cert_duration: 90
