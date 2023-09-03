@@ -3,6 +3,7 @@ defmodule App.MixProject do
 
   def project do
     [
+      name: "Butterfield",
       app: :butterfield,
       version: "0.1.0",
       elixir: "~> 1.15",
@@ -11,7 +12,8 @@ defmodule App.MixProject do
       ],
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      aliases: aliases()
+      aliases: aliases(),
+      docs: docs()
     ]
   end
 
@@ -40,6 +42,17 @@ defmodule App.MixProject do
   defp aliases do
     [
       test: "test --no-start"
+    ]
+  end
+
+  defp docs do
+    [
+      formatters: ["html"],
+      main: "readme",
+      extras: [
+        "README.md",
+        "notes/implementation.md": [title: "Implementation Notes"]
+      ]
     ]
   end
 end
