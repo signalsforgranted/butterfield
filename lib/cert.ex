@@ -100,9 +100,9 @@ defmodule Roughtime.CertBox do
   end
 
   @doc """
-  Runs [`Roughtime.CertBox.generate/1`](`Roughtime.CertBox.generate) but will
-  generate a very ephemeral "long term" key. This is useful for firing up the
-  server in development or testing, but should be avoided in runtime.
+  Runs `Roughtime.CertBox.generate/1` but will generate a very ephemeral "long
+  term" key. This is useful for firing up the server in development or testing,
+  but should be avoided in runtime.
 
   ⚠️  **This keypair is not persisted anywhere!**
   """
