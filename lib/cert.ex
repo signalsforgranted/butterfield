@@ -17,8 +17,27 @@ defmodule Roughtime.CertBox do
   the `MAXT` value, but require the long-term private key again to do so.
   """
 
-  @response_context "RoughTime v1 response signature"
+  # Context Strings are required when signing messages, thus we are very
+  # specifically using "contextual" Ed25519 or otherwise known as Ed25519ctx.
+  # Roughtime responses have two signatures - one for the temporal certificate,
+  # which is everything inside `DELE` tag.
+  @doc """
+  Delegation Context is used when signing the temporary certificate.
+  """
   @delegation_context "RoughTime v1 delegation signature"
+  @spec delegation_context() :: String.t()
+  def delegation_context do
+    @delegation_context
+  end
+
+  @doc """
+  Response Context is used when signing the `SREP` tag.
+  """
+  @response_context "RoughTime v1 response signature"
+  @spec response_context() :: String.t()
+  def response_context do
+    @response_context
+  end
 
   @spec cert_duration() :: integer()
   defp cert_duration do
@@ -29,7 +48,7 @@ defmodule Roughtime.CertBox do
   def start_link(_opts) do
     {:ok, pid} = Agent.start_link(fn -> %{} end, name: __MODULE__)
     # Minimise key material from leaking in crash dumps
-    #Process.flag(pid, :sensitive, true)
+    # Process.flag(pid, :sensitive, true)
     {:ok, pid}
   end
 
@@ -42,42 +61,57 @@ defmodule Roughtime.CertBox do
 
   ⚠️  **This will replace any keys already in place! **
   """
-  @spec generate(any()) :: :ok
-  def generate(prikey \\ nil) do
-
+  @spec generate(binary()) :: :ok
+  def generate(lt_prikey) do
     Logger.info("Generating new temporary keypair...")
     min_t = DateTime.now!("Etc/UTC")
     max_t = DateTime.add(min_t, cert_duration(), :day)
 
-    {temp_pubkey, temp_prikey} = :libdecaf_curve25519.eddsa_keypair()
+    {pubkey, prikey} = :libdecaf_curve25519.eddsa_keypair()
     # Generate the CERT block
     cert = %{
       MINT: min_t,
       MAXT: max_t,
-      PUBK: temp_pubkey
+      PUBK: pubkey
     }
 
     cert_ser = Roughtime.Wire.generate_message(cert)
-    sig = :libdecaf_curve25519.ed25519ctx_sign(cert_ser, prikey, @delegation_context)
-    cert = Roughtime.Wire.generate_message(%{
-      CERT: %{
-        SIG: sig,
-        DELE: cert_ser
-      }
-    })
+    sig = :libdecaf_curve25519.ed25519ctx_sign(cert_ser, lt_prikey, @delegation_context)
 
-    Logger.info("Certificate generated:\n
-    Public Key: #{Base.encode64(temp_pubkey)}\n
-    Min Time: #{DateTime.to_iso8601(min_t)}\n
+    cert =
+      Roughtime.Wire.generate_message(%{
+        CERT: %{
+          SIG: sig,
+          DELE: cert_ser
+        }
+      })
+
+    Logger.info("Certificate generated:
+    Public Key: #{Base.encode64(pubkey)}
+    Min Time: #{DateTime.to_iso8601(min_t)}
     Max Time: #{DateTime.to_iso8601(max_t)}")
 
-    Agent.update(__MODULE__, fn _state -> %{
-      cert: cert,
-      min_t: min_t,
-      max_t: max_t,
-      prikey: temp_prikey,
-      pubkey: temp_pubkey
-    } end)
+    Agent.update(__MODULE__, fn _state ->
+      %{
+        cert: cert,
+        min_t: min_t,
+        max_t: max_t,
+        prikey: prikey,
+        pubkey: pubkey
+      }
+    end)
+  end
+
+  @doc """
+  Runs [`Roughtime.CertBox.generate/1`](`Roughtime.CertBox.generate) but will
+  generate a very ephemeral "long term" key.
+  """
+  @spec generate() :: :ok
+  def generate do
+    {lt_pubkey, lt_prikey} = :libdecaf_curve25519.eddsa_keypair()
+    Logger.info("No long term key was provided, making a temp key instead")
+    Logger.info("Public Key: #{Base.encode64(lt_pubkey)}")
+    generate(lt_prikey)
   end
 
   @doc """
@@ -88,6 +122,9 @@ defmodule Roughtime.CertBox do
     Map.fetch!(Agent.get(__MODULE__, & &1), :cert)
   end
 
+  @doc """
+  Return the current public key
+  """
   @spec pubkey() :: binary()
   def pubkey do
     Map.fetch!(Agent.get(__MODULE__, & &1), :pubkey)
@@ -100,9 +137,5 @@ defmodule Roughtime.CertBox do
   def sign(payload) do
     prikey = Map.fetch!(Agent.get(__MODULE__, & &1), :prikey)
     :libdecaf_curve25519.ed25519ctx_sign(payload, prikey, @response_context)
-  end
-
-  def verify(sig, payload, pubkey) do
-    :libdecaf_curve25519.ed25519ctx_verify(sig, payload, pubkey)
   end
 end

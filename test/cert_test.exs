@@ -7,13 +7,24 @@ defmodule Roughtime.CertTest do
   end
 
   @moduletag :capture_log
-  test "generates new keys" do
-    {_test_pubkey, test_prikey} = :libdecaf_curve25519.eddsa_keypair()
+  test "generates new keys and valid certificate with signature" do
+    {test_pubkey, test_prikey} = :libdecaf_curve25519.eddsa_keypair()
     Roughtime.CertBox.generate(test_prikey)
     cert = Roughtime.CertBox.cert()
     assert cert != nil
+
     pubkey = Roughtime.CertBox.pubkey()
     assert byte_size(pubkey) == 32
-  end
 
+    cert =
+      Map.fetch!(Roughtime.Wire.parse_message(cert, false), :CERT)
+      |> Roughtime.Wire.parse_message(false)
+
+    assert :libdecaf_curve25519.ed25519ctx_verify(
+             Map.fetch!(cert, :SIG),
+             Map.fetch!(cert, :DELE),
+             test_pubkey,
+             Roughtime.CertBox.delegation_context()
+           )
+  end
 end
