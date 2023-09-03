@@ -95,6 +95,10 @@ defmodule Roughtime.WireTest do
     generated = Roughtime.Wire.generate(message)
     result = Roughtime.Wire.parse(generated)
     assert result == message
+
+    classic_generated = Roughtime.Wire.generate(message, :classic)
+    classic_result = Roughtime.Wire.parse_classic(classic_generated)
+    assert classic_result == message
   end
 
   test "generates and parses Unix timestamp" do
