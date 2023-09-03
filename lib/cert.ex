@@ -46,10 +46,7 @@ defmodule Roughtime.CertBox do
 
   @spec start_link(any()) :: Agent.on_start()
   def start_link(_opts) do
-    {:ok, pid} = Agent.start_link(fn -> %{} end, name: __MODULE__)
-    # Minimise key material from leaking in crash dumps
-    # Process.flag(pid, :sensitive, true)
-    {:ok, pid}
+    Agent.start_link(fn -> %{} end, name: __MODULE__)
   end
 
   @doc """
@@ -104,13 +101,16 @@ defmodule Roughtime.CertBox do
 
   @doc """
   Runs [`Roughtime.CertBox.generate/1`](`Roughtime.CertBox.generate) but will
-  generate a very ephemeral "long term" key.
+  generate a very ephemeral "long term" key. This is useful for firing up the
+  server in development or testing, but should be avoided in runtime.
+
+  ⚠️  **This keypair is not persisted anywhere!**
   """
   @spec generate() :: :ok
   def generate do
     {lt_pubkey, lt_prikey} = :libdecaf_curve25519.eddsa_keypair()
-    Logger.info("No long term key was provided, making a temp key instead")
-    Logger.info("Public Key: #{Base.encode64(lt_pubkey)}")
+    Logger.warning("No long term key was provided, making a temp key instead")
+    Logger.warning("Public Key: #{Base.encode64(lt_pubkey)}")
     generate(lt_prikey)
   end
 
