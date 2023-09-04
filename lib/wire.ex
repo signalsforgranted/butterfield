@@ -75,6 +75,13 @@ defmodule Roughtime.Wire do
   # Days between Modified Julian Day (1858-11-17) and Unix Epoch (1970-01-01)
   @mjd_offset 40_587
 
+  @doc "Protocol version - this is only used by IETF versions"
+  @version <<1, 0, 0, 0>>
+  @spec version() :: binary()
+  def version do
+    @version
+  end
+
   @doc """
   Parse a request packet.
   Returns a list of lists, each with the tag as first element and value as second.
