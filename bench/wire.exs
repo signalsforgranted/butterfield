@@ -2,11 +2,12 @@ Incendium.Application.start(nil, nil)
 
 Incendium.run(
   %{
-    "parse_message" => fn payload -> Roughtime.Wire.parse_message(payload) end
+    "parse" => fn payload -> Roughtime.Wire.parse(payload) end
   },
   inputs: %{
-    "roughenough" => File.read!("test/fixtures/roughenough-response.bin"),
-    "google" => File.read!("test/fixtures/google-request.bin")
+    "roughenough-req" => File.read!("test/fixtures/roughenough-request.bin"),
+    "roughenough-res" => File.read!("test/fixtures/roughenough-response.bin"),
+    "cloudflare-res" => File.read!("test/fixtures/cloudflare-response.bin")
   },
   title: "Butterfield Benchmark"
 )
