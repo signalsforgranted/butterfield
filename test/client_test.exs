@@ -1,4 +1,4 @@
-defmodule Routime.ProtocolTest do
+defmodule Routime.ClientTest do
   use ExUnit.Case
 
   setup do
@@ -7,14 +7,14 @@ defmodule Routime.ProtocolTest do
   end
 
   test "generates a classic request" do
-    {req, nonc} = Roughtime.Protocol.generate_request(:classic)
+    {req, nonc} = Roughtime.Client.generate_request(:classic)
     assert nonc != nil
     parsed = Roughtime.Wire.parse_message(req)
     assert Map.fetch!(parsed, :NONC) == nonc
   end
 
   test "generates an IETF request" do
-    {req, nonc} = Roughtime.Protocol.generate_request()
+    {req, nonc} = Roughtime.Client.generate_request()
     assert nonc != nil
     parsed = Roughtime.Wire.parse(req)
     assert Map.fetch!(parsed, :NONC) == nonc
