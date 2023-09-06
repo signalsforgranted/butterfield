@@ -12,10 +12,14 @@ iex:
 test:
 	@${BASE_CMD} mix test
 
-fulltest:
+analyse:
 	-@${BASE_CMD} mix dialyzer --quiet --format dialyxir
 	-@${BASE_CMD} mix credo --strict
 	-@${BASE_CMD} mix test --cover
+
+audit:
+	@${BASE_CMD} mix sobelow --details --private
+	@${BASE_CMD} mix hex.audit
 
 bench:
 	@${BASE_CMD} mix run bench/wire.exs
