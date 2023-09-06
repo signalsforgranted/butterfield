@@ -1,6 +1,6 @@
 require Logger
 
-defmodule Roughtime.Server do
+defmodule Roughtime.Handler do
   @moduledoc false
   use GenServer
 
@@ -19,8 +19,6 @@ defmodule Roughtime.Server do
 
   @impl true
   def init(_params) do
-    # Setup CertBox here
-    # Roughtime.CertBox.generate()
     Logger.info("Starting roughtime server on port #{default_port()}...")
     :gen_udp.open(default_port(), [:binary, active: true])
   end

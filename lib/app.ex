@@ -6,7 +6,7 @@ defmodule Roughtime.Application do
   def start(_type, _args) do
     children = [
       Roughtime.CertBox,
-      Roughtime.Server
+      Roughtime.Handler
     ]
 
     opts = [strategy: :one_for_one, name: Roughtime.Supervisor]
