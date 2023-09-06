@@ -1,5 +1,4 @@
 defmodule Roughtime.Client do
-
   @moduledoc """
   Roughtime client. We keep the network handling out of this module, same with
   any wire serialisation.
