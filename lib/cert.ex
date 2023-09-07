@@ -24,7 +24,7 @@ defmodule Roughtime.CertBox do
   @doc """
   Delegation Context is used when signing the temporary certificate.
   """
-  @delegation_context "RoughTime v1 delegation signature"
+  @delegation_context "RoughTime v1 delegation signature" <> <<0>>
   @spec delegation_context() :: String.t()
   def delegation_context do
     @delegation_context
@@ -33,7 +33,7 @@ defmodule Roughtime.CertBox do
   @doc """
   Response Context is used when signing the `SREP` tag.
   """
-  @response_context "RoughTime v1 response signature"
+  @response_context "RoughTime v1 response signature" <> <<0>>
   @spec response_context() :: String.t()
   def response_context do
     @response_context
