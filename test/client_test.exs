@@ -1,5 +1,6 @@
-defmodule Routime.ClientTest do
+defmodule Roughtime.ClientTest do
   use ExUnit.Case
+  doctest Roughtime.Client
 
   setup do
     {:ok, box} = Roughtime.CertBox.start_link([])

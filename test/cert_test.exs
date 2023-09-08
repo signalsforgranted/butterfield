@@ -1,5 +1,6 @@
-defmodule Roughtime.CertTest do
+defmodule Roughtime.CertBoxTest do
   use ExUnit.Case, async: true
+  doctest Roughtime.CertBox
 
   setup do
     {:ok, box} = Roughtime.CertBox.start_link(%{})
