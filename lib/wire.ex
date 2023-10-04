@@ -87,16 +87,18 @@ defmodule Roughtime.Wire do
   Returns a list of lists, each with the tag as first element and value as second.
   """
   @spec parse(binary()) :: map()
-  def parse(packet) when is_binary(packet) do
-    # Parse header and separate out message
+  def parse(<<@protocol_identifier::unsigned-little-integer-size(64), rest::bits>>) do
     <<
-      @protocol_identifier::unsigned-little-integer-size(64),
       length::unsigned-little-integer-size(32),
       message::binary
-    >> = packet
+    >> = rest
 
-    # It's possible we got more than the announced length, so truncate it...
     message = <<message::binary-size(length)>>
+    parse_message(message)
+  end
+
+  @spec parse(binary()) :: map()
+  def parse(message) when is_binary(message) do
     parse_message(message)
   end
 
