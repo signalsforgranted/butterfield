@@ -53,7 +53,7 @@ defmodule Roughtime.WireTest do
       "test/fixtures/google-request.bin"
       |> File.read!()
 
-    message = Roughtime.Wire.parse_classic(payload)
+    message = Roughtime.Wire.parse(payload)
 
     for {tag, _value} <- message do
       if not Enum.member?([:PAD, :NONC], tag) do
@@ -97,7 +97,7 @@ defmodule Roughtime.WireTest do
     assert result == message
 
     classic_generated = Roughtime.Wire.generate(message, :classic)
-    classic_result = Roughtime.Wire.parse_classic(classic_generated)
+    classic_result = Roughtime.Wire.parse(classic_generated)
     assert classic_result == message
   end
 

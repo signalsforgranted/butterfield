@@ -87,29 +87,20 @@ defmodule Roughtime.Wire do
   Returns a list of lists, each with the tag as first element and value as second.
   """
   @spec parse(binary()) :: map()
-  def parse(<<@protocol_identifier::unsigned-little-integer-size(64), rest::bits>>) do
-    <<
-      length::unsigned-little-integer-size(32),
-      message::binary
-    >> = rest
-
-    message = <<message::binary-size(length)>>
-    parse_message(message)
-  end
-
-  @spec parse(binary()) :: map()
   def parse(message) when is_binary(message) do
-    parse_message(message)
-  end
+    case message do
+      <<@protocol_identifier::unsigned-little-integer-size(64), rest::bits>> ->
+        <<
+          length::unsigned-little-integer-size(32),
+          message::binary
+        >> = rest
 
-  @doc """
-  Parse an older formatted payload.
-  Unlike newer I-D versions, requets do not have the protocol identifier,
-  Amongst other differences.
-  """
-  @spec parse_classic(binary()) :: map()
-  def parse_classic(message) do
-    parse_message(message)
+        message = <<message::binary-size(length)>>
+        parse_message(message)
+
+      _ ->
+        parse_message(message)
+    end
   end
 
   @doc """
@@ -191,7 +182,7 @@ defmodule Roughtime.Wire do
   Parse timestamp values.
   Timestamps are either provided with UNIX Epoch (midnight 1970-01-01) values,
   or they use Modified Julian Date with today's total microseconds interleaved.
-  It's also possible for implementations to juse use maximum 64bit integer value
+  It's also possible for implementations to just use maximum 64bit integer value
   as well, particularly for expiration or unknown values. To figure out which is
   which, we assume any timestamp greater than UNIX epoch but lower than highest
   date is MJD, and handle those greater than the highest date is invalid.
