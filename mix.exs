@@ -50,7 +50,8 @@ defmodule App.MixProject do
       main: "readme",
       extras: [
         "README.md",
-        "notes/implementation.md": [title: "Implementation Notes"]
+        "notes/implementation.md",
+        "notes/observations.md"
       ]
     ]
   end
