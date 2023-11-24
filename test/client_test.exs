@@ -2,11 +2,6 @@ defmodule Roughtime.ClientTest do
   use ExUnit.Case
   doctest Roughtime.Client
 
-  setup do
-    {:ok, box} = Roughtime.CertBox.start_link([])
-    %{box: box}
-  end
-
   test "generates a classic request" do
     {req, nonc} = Roughtime.Client.generate_request(:classic)
     assert nonc != nil
