@@ -24,8 +24,10 @@ defmodule Roughtime.Handler do
   end
 
   @impl true
-  def handle_info({:udp, _socket, address, port, _data}, state) do
+  def handle_info({:udp, socket, address, port, data}, state) do
     Logger.debug("Request from #{:inet.ntoa(address)}:#{port}")
+    res = Roughtime.Server.handle_request(data)
+    :gen_udp.send(socket, address, port, res)
     {:noreply, state}
   end
 end
