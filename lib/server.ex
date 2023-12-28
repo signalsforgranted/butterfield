@@ -6,7 +6,7 @@ defmodule Roughtime.Server do
   """
 
   # Which version(s) we support.
-  @supported_version <<1,0,0,0>>
+  #@supported_version <<1,0,0,0>>
 
   @spec start_link(any()) :: Agent.on_start()
   def start_link(_opts) do
@@ -34,7 +34,7 @@ defmodule Roughtime.Server do
       CERT: Roughtime.CertBox.cert(),
 
       # TODO: Actual version negotiation
-      VER: Map.get(req, :VER),
+      VER: res_ver,
 
       # TODO: What if NONC is missing?!
       NONC: Map.get(req, :NONC),
@@ -62,8 +62,9 @@ defmodule Roughtime.Server do
     Roughtime.Wire.generate(res)
   end
 
-  def check_version() do
-    vers = for <<version::unsigned-little-integer-size(32) <- vers>>, do: version
-    
+  defp check_version(vers) do
+    _vers = for <<version::unsigned-little-integer-size(32) <- vers>>, do: version
+    #List.get
+    <<1, 0, 0, 0>>
   end
 end
