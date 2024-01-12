@@ -1,13 +1,15 @@
 defmodule Roughtime.ServerTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case
   doctest Roughtime.Server
 
   setup do
     {:ok, server} = Roughtime.Server.start_link(%{})
+    {:ok, box} = Roughtime.CertBox.start_link(%{})
 
-    %{server: server}
+    %{server: server, box: box}
   end
 
+  @moduletag :capture_log
   test "handles requests" do
     Roughtime.CertBox.generate()
     {req, nonc} = Roughtime.Client.generate_request(:ietf)

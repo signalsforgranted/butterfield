@@ -2,11 +2,14 @@ defmodule Roughtime.Server do
   use Agent
 
   @moduledoc """
-  Roughtime server logic - sans networking.
+  Roughtime server logic without network interactions.
   """
 
   # Which version(s) we support.
-  #@supported_version <<1,0,0,0>>
+  @supported_version <<1, 0, 0, 0>>
+
+  # Default value for RADI until we know better precision
+  @default_precision <<1, 0, 0, 0>>
 
   @spec start_link(any()) :: Agent.on_start()
   def start_link(_opts) do
@@ -32,25 +35,22 @@ defmodule Roughtime.Server do
 
     res = %{
       CERT: Roughtime.CertBox.cert(),
-
-      # TODO: Actual version negotiation
       VER: res_ver,
 
       # TODO: What if NONC is missing?!
       NONC: Map.get(req, :NONC),
 
       # Merkle Tree
+      # TODO: Add these actual values, rather than lying here
       INDX: <<0, 0, 0, 0>>,
       PATH: <<"">>
-
-      # TODO: DTAI, DUT1, LEAP Support? Need to look at existing BEAM docs
     }
 
     srep = %{
       ROOT: Map.fetch!(Agent.get(__MODULE__, & &1), :tree).root.value,
       MIDP: DateTime.now!("Etc/UTC"),
-      ## RADI - As of -08, this is now whole seconds
-      RADI: <<1>>
+      # RADI - As of -08, this is now whole seconds
+      RADI: @default_precision
     }
 
     # Sign SREP
@@ -63,8 +63,7 @@ defmodule Roughtime.Server do
   end
 
   defp check_version(vers) do
-    _vers = for <<version::unsigned-little-integer-size(32) <- vers>>, do: version
-    #List.get
-    <<1, 0, 0, 0>>
+    vers = for <<version::size(4)-binary <- vers>>, do: version
+    Enum.find(vers, &(&1 == @supported_version))
   end
 end
