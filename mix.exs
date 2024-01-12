@@ -52,7 +52,7 @@ defmodule App.MixProject do
       extras: [
         "README.md",
         "notes/implementation.md",
-        "notes/observations.md"
+        "notes/design.md"
       ]
     ]
   end
