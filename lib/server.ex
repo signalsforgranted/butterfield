@@ -9,7 +9,8 @@ defmodule Roughtime.Server do
   @supported_version <<1, 0, 0, 0>>
 
   # Default value for RADI until we know better precision
-  @default_precision <<1, 0, 0, 0>>
+  # As of -11, this must be at least 3 seconds
+  @default_precision <<3, 0, 0, 0>>
 
   @spec start_link(any()) :: Agent.on_start()
   def start_link(_opts) do
