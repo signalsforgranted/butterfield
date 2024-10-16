@@ -29,3 +29,6 @@ format:
 
 docs:
 	@${BASE_CMD} mix docs
+
+clean:
+	@rm -rf _build doc deps cover 
