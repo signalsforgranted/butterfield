@@ -3,6 +3,8 @@ defmodule Roughtime.MerkleCrypto do
   Provide crypto handler for the merkle tree
   The included handler with the library uses Base16 which we don't need, as well
   as supports several other crypto functions, again, we don't need.
+
+  "In hora nulla mora"
   """
 
   @spec hash(binary()) :: binary()

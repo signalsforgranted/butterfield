@@ -3,6 +3,8 @@ defmodule Roughtime.Server do
 
   @moduledoc """
   Roughtime server logic without network interactions.
+
+  "Quid celerius tempore?"
   """
 
   # Which version(s) we support.

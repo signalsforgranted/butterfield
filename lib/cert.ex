@@ -15,6 +15,8 @@ defmodule Roughtime.CertBox do
   responses are then signed with the temporary key. A new temporary key can be
   generated at a later time (important for long-running instances that exceed
   the `MAXT` value, but require the long-term private key again to do so.
+
+  "Volat tempus"
   """
 
   # Context Strings are required when signing messages, thus we are very

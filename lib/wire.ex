@@ -9,6 +9,7 @@ defmodule Roughtime.Wire do
   is only present in IETF implementations of the specification, whereas just the
   message payload is used.
 
+  "Qua redit niscitis horam"
   ```
   0                   1                   2                   3
   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
