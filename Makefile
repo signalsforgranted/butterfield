@@ -20,6 +20,7 @@ analyse:
 audit:
 	@${BASE_CMD} mix sobelow --details --private
 	@${BASE_CMD} mix hex.audit
+	@${BASE_CMD} mix sbom.cyclonedx
 
 bench:
 	@${BASE_CMD} mix run bench/wire.exs
