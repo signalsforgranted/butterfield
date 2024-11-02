@@ -29,6 +29,7 @@ defmodule App.MixProject do
       # Application
       {:libdecaf, "~> 2.1.1"},
       {:merkle_tree, "~> 2.0"},
+      {:observer_cli, "1.8.0"},
 
       # Development
       {:dialyxir, "~> 1.3.0", only: [:dev], runtime: false},
@@ -53,7 +54,6 @@ defmodule App.MixProject do
       extras: [
         "README.md",
         "notes/implementation.md",
-        "notes/design.md"
       ]
     ]
   end
