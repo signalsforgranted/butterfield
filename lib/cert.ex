@@ -19,6 +19,9 @@ defmodule Roughtime.CertBox do
   "Volat tempus"
   """
 
+  # Default duration of temporary certificates made off the long-term
+  @default_cert_duration 90
+
   # Context Strings are required when signing messages, thus we are very
   # specifically using "contextual" Ed25519 or otherwise known as Ed25519ctx.
   # Roughtime responses have two signatures - one for the temporal certificate,
@@ -41,14 +44,26 @@ defmodule Roughtime.CertBox do
     @response_context
   end
 
-  @spec cert_duration() :: integer()
-  defp cert_duration do
-    Application.fetch_env!(:butterfield, :cert_duration)
-  end
+  @doc """
 
-  @spec start_link(any()) :: Agent.on_start()
-  def start_link(_opts) do
-    Agent.start_link(fn -> %{} end, name: __MODULE__)
+  """
+  @spec start_link(map()) :: Agent.on_start()
+  def start_link(keys) do
+    # We don't have keys, make temp...
+    {lt_pubkey, lt_prikey} =
+      if Map.get(keys, :lt_prikey) != nil and Map.get(keys, :lt_pubkey) != nil do
+        dc_prikey = Base.decode64!(Map.get(keys, :lt_prikey))
+        dc_pubkey = Base.decode64!(Map.get(keys, :lt_pubkey))
+        {dc_pubkey, dc_prikey}
+      else
+        Logger.warning("No long-term keys provided, generating some")
+        :libdecaf_curve25519.eddsa_keypair()
+      end
+
+    duration = Map.get(keys, :duration, @default_cert_duration)
+
+    keys = generate(lt_prikey, lt_pubkey, duration)
+    Agent.start_link(fn -> keys end, name: __MODULE__)
   end
 
   @doc """
@@ -60,18 +75,18 @@ defmodule Roughtime.CertBox do
 
   ⚠️  **This will replace any keys already in place! **
   """
-  @spec generate(binary()) :: :ok
-  def generate(lt_prikey) do
+  @spec generate(binary(), binary(), pos_integer()) :: map()
+  def generate(lt_prikey, lt_pubkey, duration) do
     Logger.info("Generating new temporary keypair...")
     min_t = DateTime.now!("Etc/UTC")
-    max_t = DateTime.add(min_t, cert_duration(), :day)
+    max_t = DateTime.add(min_t, duration, :day)
 
-    {pubkey, prikey} = :libdecaf_curve25519.eddsa_keypair()
+    {tmp_pubkey, tmp_prikey} = :libdecaf_curve25519.eddsa_keypair()
     # Generate the CERT block
     cert = %{
       MINT: min_t,
       MAXT: max_t,
-      PUBK: pubkey
+      PUBK: tmp_pubkey
     }
 
     cert_ser = Roughtime.Wire.generate_message(cert)
@@ -86,19 +101,19 @@ defmodule Roughtime.CertBox do
       })
 
     Logger.info("Certificate generated:
-    Public Key: #{Base.encode64(pubkey)}
+    Long-term Public Key: #{Base.encode64(lt_pubkey)}
+    Temp Public Key: #{Base.encode64(tmp_pubkey)}
     Min Time: #{DateTime.to_iso8601(min_t)}
     Max Time: #{DateTime.to_iso8601(max_t)}")
 
-    Agent.update(__MODULE__, fn _state ->
-      %{
-        cert: cert,
-        min_t: min_t,
-        max_t: max_t,
-        prikey: prikey,
-        pubkey: pubkey
-      }
-    end)
+    %{
+      cert: cert,
+      min_t: min_t,
+      max_t: max_t,
+      prikey: tmp_prikey,
+      pubkey: tmp_pubkey,
+      lt_pubkey: lt_pubkey
+    }
   end
 
   @doc """
@@ -113,7 +128,7 @@ defmodule Roughtime.CertBox do
     {lt_pubkey, lt_prikey} = :libdecaf_curve25519.eddsa_keypair()
     Logger.warning("No long term key was provided, making a temp key instead")
     Logger.warning("Public Key: #{Base.encode64(lt_pubkey)}")
-    generate(lt_prikey)
+    generate(lt_prikey, lt_pubkey, @default_cert_duration)
   end
 
   @doc """

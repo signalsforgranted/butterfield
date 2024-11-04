@@ -3,21 +3,26 @@ defmodule Roughtime.CertBoxTest do
   doctest Roughtime.CertBox
 
   setup do
-    {:ok, box} = Roughtime.CertBox.start_link(%{})
-    %{box: box}
+    {pubkey, prikey} = :libdecaf_curve25519.eddsa_keypair()
+
+    {:ok, box} =
+      Roughtime.CertBox.start_link(%{
+        lt_prikey: Base.encode64(prikey),
+        lt_pubkey: Base.encode64(pubkey),
+        cert_duration: 2
+      })
+
+    %{box: box, lt_prikey: prikey, lt_pubkey: pubkey}
   end
 
   @moduletag :capture_log
   test "generates temporary long-term key" do
-    Roughtime.CertBox.generate()
     pubkey = Roughtime.CertBox.pubkey()
     assert pubkey != nil
   end
 
   @moduletag :capture_log
-  test "generates new keys and valid certificate with signature" do
-    {test_pubkey, test_prikey} = :libdecaf_curve25519.eddsa_keypair()
-    Roughtime.CertBox.generate(test_prikey)
+  test "generates new keys and valid certificate with signature", context do
     cert = Roughtime.CertBox.cert()
     assert cert != nil
 
@@ -31,13 +36,13 @@ defmodule Roughtime.CertBoxTest do
     assert :libdecaf_curve25519.ed25519ctx_verify(
              Map.fetch!(cert, :SIG),
              Map.fetch!(cert, :DELE),
-             test_pubkey,
+             Map.fetch!(context, :lt_pubkey),
              Roughtime.CertBox.delegation_context()
            )
   end
 
-  @moduletag :capture_log
-  test "can sign a response with temporary keys" do
+  # @moduletag :capture_log
+  test "can sign a response with temporary keys", _context do
     Roughtime.CertBox.generate()
     pubkey = Roughtime.CertBox.pubkey()
     payload = <<"test string">>
