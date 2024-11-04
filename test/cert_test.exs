@@ -43,7 +43,6 @@ defmodule Roughtime.CertBoxTest do
 
   # @moduletag :capture_log
   test "can sign a response with temporary keys", _context do
-    Roughtime.CertBox.generate()
     pubkey = Roughtime.CertBox.pubkey()
     payload = <<"test string">>
     sig = Roughtime.CertBox.sign(payload)

@@ -11,7 +11,6 @@ defmodule Roughtime.ServerTest do
 
   @moduletag :capture_log
   test "handles requests" do
-    Roughtime.CertBox.generate()
     {req, nonc} = Roughtime.Client.generate_request(:ietf)
     assert nonc != false
 
