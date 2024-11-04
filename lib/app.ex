@@ -18,7 +18,8 @@ defmodule Roughtime.Application do
          lt_pubkey: lt_pubkey,
          cert_duration: cert_duration
        }},
-      Roughtime.Handler
+      Roughtime.Handler,
+      Roughtime.Server
     ]
 
     opts = [strategy: :one_for_one, name: Roughtime.Supervisor]

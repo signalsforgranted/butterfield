@@ -45,7 +45,9 @@ defmodule Roughtime.CertBox do
   end
 
   @doc """
-
+  Start the Agent, and set up pre-signing of the certificate and temporary keys.
+  Map should contain the long term private key as `lt_prikey`, and public key as
+  `lt_pubkey`. If either aren't set, we just make some temporary ones.
   """
   @spec start_link(map()) :: Agent.on_start()
   def start_link(keys) do
@@ -62,21 +64,15 @@ defmodule Roughtime.CertBox do
 
     duration = Map.get(keys, :duration, @default_cert_duration)
 
-    keys = generate(lt_prikey, lt_pubkey, duration)
+    keys = generate(lt_pubkey, lt_prikey, duration)
     Agent.start_link(fn -> keys end, name: __MODULE__)
   end
 
   @doc """
-  Either at start up before responding to requests or at some point on an
-  existing running service generate a temporary keypair, sign and pre-generate
-  the response payload. If the private key at `:butterfield.private_key` is not
-  set, then we will generate a temporary long term key that will be discarded in
-  order to generate and sign the temporary keys used in the certificate.
-
-  ⚠️  **This will replace any keys already in place! **
+  Generate the temporary keys and pre-generate the CERT and nested tags
   """
   @spec generate(binary(), binary(), pos_integer()) :: map()
-  def generate(lt_prikey, lt_pubkey, duration) do
+  def generate(lt_pubkey, lt_prikey, duration) do
     Logger.info("Generating new temporary keypair...")
     min_t = DateTime.now!("Etc/UTC")
     max_t = DateTime.add(min_t, duration, :day)
@@ -114,21 +110,6 @@ defmodule Roughtime.CertBox do
       pubkey: tmp_pubkey,
       lt_pubkey: lt_pubkey
     }
-  end
-
-  @doc """
-  Runs `Roughtime.CertBox.generate/1` but will generate a very ephemeral "long
-  term" key. This is useful for firing up the server in development or testing,
-  but should be avoided in runtime.
-
-  ⚠️  **This keypair is not persisted anywhere!**
-  """
-  @spec generate() :: :ok
-  def generate do
-    {lt_pubkey, lt_prikey} = :libdecaf_curve25519.eddsa_keypair()
-    Logger.warning("No long term key was provided, making a temp key instead")
-    Logger.warning("Public Key: #{Base.encode64(lt_pubkey)}")
-    generate(lt_prikey, lt_pubkey, @default_cert_duration)
   end
 
   @doc """
