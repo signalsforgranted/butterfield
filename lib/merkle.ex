@@ -9,6 +9,6 @@ defmodule Roughtime.MerkleCrypto do
 
   @spec hash(binary()) :: binary()
   def hash(data) do
-    :crypto.hash(:sha512, data)
+    <<:crypto.hash(:sha512, data)::binary-size(32)>>
   end
 end

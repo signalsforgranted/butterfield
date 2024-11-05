@@ -7,8 +7,8 @@ defmodule Roughtime.Server do
   "Quid celerius tempore?"
   """
 
-  # Which version(s) we support.
-  @supported_version <<1, 0, 0, 0>>
+  # Which version we support - this is draft-ietf-ntp-roughtime-11
+  @supported_version <<11, 0, 0, 128>>
 
   # Default value for RADI until we know better precision
   # As of -11, this must be at least 3 seconds
@@ -16,11 +16,8 @@ defmodule Roughtime.Server do
 
   @spec start_link(any()) :: Agent.on_start()
   def start_link(_opts) do
-    # Setup Merkle Tree - we stick in random bytes into the root to start with
-    # because you can't really start empty, and because I *think* it may
-    # mitigate issues down the line. This assumption may be wrong.
     mt =
-      MerkleTree.new([:crypto.strong_rand_bytes(32)],
+      MerkleTree.new([],
         hash_function: &Roughtime.MerkleCrypto.hash/1
       )
 
