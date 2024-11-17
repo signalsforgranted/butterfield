@@ -64,6 +64,24 @@ defmodule Roughtime.WireTest do
     assert byte_size(Map.get(message, :NONC)) == 64
   end
 
+  test "parse draft-11 response" do
+    payload =
+      "test/fixtures/draft11-response.bin"
+      |> File.read!()
+
+    message = Roughtime.Wire.parse(payload)
+
+    IO.inspect(message)
+
+    for {tag, _value} <- message do
+      if not Enum.member?([:VER, :CERT, :INDX, :PATH, :SREP, :SIG], tag) do
+        flunk("Contains unexpected tag #{tag}")
+      end
+    end
+
+    assert byte_size(Map.get(message, :SIG)) == 64
+  end
+
   test "generates valid request" do
     message = %{TEST: "test", VER: <<1, 0, 0, 0>>, NONC: :crypto.strong_rand_bytes(64)}
     generated = Roughtime.Wire.generate(message)
