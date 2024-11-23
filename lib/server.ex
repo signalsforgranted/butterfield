@@ -16,12 +16,7 @@ defmodule Roughtime.Server do
 
   @spec start_link(any()) :: Agent.on_start()
   def start_link(_opts) do
-    mt =
-      MerkleTree.new([],
-        hash_function: &Roughtime.MerkleCrypto.hash/1
-      )
-
-    Agent.start_link(fn -> %{tree: mt} end, name: __MODULE__)
+    Agent.start_link(fn -> %{} end, name: __MODULE__)
   end
 
   @spec handle_request(binary()) :: binary()
@@ -32,6 +27,11 @@ defmodule Roughtime.Server do
     req = Roughtime.Wire.parse(request)
 
     res_ver = check_version(Map.get(req, :VER))
+
+    mt =
+      MerkleTree.new([Map.get(req, :NONC)],
+        hash_function: &Roughtime.MerkleCrypto.hash/1
+      )
 
     res = %{
       CERT: Roughtime.CertBox.cert(),
@@ -47,7 +47,7 @@ defmodule Roughtime.Server do
     }
 
     srep = %{
-      ROOT: Map.fetch!(Agent.get(__MODULE__, & &1), :tree).root.value,
+      ROOT: mt.root.value,
       MIDP: DateTime.now!("Etc/UTC"),
       # RADI - As of -08, this is now whole seconds
       RADI: @default_precision

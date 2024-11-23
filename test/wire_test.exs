@@ -71,8 +71,6 @@ defmodule Roughtime.WireTest do
 
     message = Roughtime.Wire.parse(payload)
 
-    IO.inspect(message)
-
     for {tag, _value} <- message do
       if not Enum.member?([:VER, :CERT, :INDX, :PATH, :SREP, :SIG], tag) do
         flunk("Contains unexpected tag #{tag}")
@@ -83,7 +81,7 @@ defmodule Roughtime.WireTest do
   end
 
   test "generates valid request" do
-    message = %{TEST: "test", VER: <<1, 0, 0, 0>>, NONC: :crypto.strong_rand_bytes(64)}
+    message = %{TEST: "test", VER: <<1, 0, 0, 0>>, NONC: :crypto.strong_rand_bytes(32)}
     generated = Roughtime.Wire.generate(message)
     result = Roughtime.Wire.parse(generated)
     assert result == message
@@ -106,7 +104,7 @@ defmodule Roughtime.WireTest do
           PUBK: "public key"
         },
         SIG: <<0>>,
-        NONC: :crypto.strong_rand_bytes(64)
+        NONC: :crypto.strong_rand_bytes(32)
       }
     }
 

@@ -77,7 +77,7 @@ defmodule Roughtime.Wire do
   @mjd_offset 40_587
 
   @doc "Protocol version - this is only used by IETF versions"
-  @version <<1, 0, 0, 0>>
+  @version <<11, 0, 0, 128>>
   @spec version() :: binary()
   def version do
     @version

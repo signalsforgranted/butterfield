@@ -18,9 +18,7 @@ defmodule Roughtime.ServerTest do
     got = Roughtime.Wire.parse(res)
 
     for {tag, _value} <- got do
-      # This list matches what roughenough provides, but does not appear to
-      # match what draft -05 or -07 produce.
-      if not Enum.member?([:INDX, :CERT, :PATH, :SIG, :SREP, :VER, :NONC], tag) do
+      if not Enum.member?([:VER, :NONC, :CERT, :INDX, :PATH, :SREP, :SIG], tag) do
         flunk("Contains unexpected tag #{tag}")
       end
     end
