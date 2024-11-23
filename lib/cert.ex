@@ -90,10 +90,8 @@ defmodule Roughtime.CertBox do
 
     cert =
       Roughtime.Wire.generate_message(%{
-        CERT: %{
           SIG: sig,
           DELE: cert_ser
-        }
       })
 
     Logger.info("Certificate generated:
