@@ -29,7 +29,7 @@ defmodule Roughtime.CertBox do
   @doc """
   Delegation Context is used when signing the temporary certificate.
   """
-  @delegation_context "RoughTime v1 delegation signature" <> <<0>>
+  @delegation_context "RoughTime v1 delegation signature--" <> <<0>>
   @spec delegation_context() :: String.t()
   def delegation_context do
     @delegation_context

@@ -1,6 +1,4 @@
 defmodule Roughtime.Wire do
-  import Bitwise
-
   @moduledoc """
   Handle all of the parsing and generation of packets.
 
@@ -80,20 +78,6 @@ defmodule Roughtime.Wire do
 
   # List of tags which can deep nest with other tags
   @nestable_tags [:SREP, :CERT, :DELE]
-
-  # Guestimate timestamp to guess which epoch, see parse_timestamp/1
-  # This integer represents 2099-12-31T23:59:59Z
-  @timestamp_guestimate 4_102_444_799_000_000
-
-  # Largest timestamp supported by DateTime as microseconds from Unix epoch
-  # This integer represents 9999-12-31T23:59:59Z
-  @timestamp_max 253_402_300_799_000_000
-
-  # Modified Julian Date
-  @mjd ~D[1858-11-17]
-
-  # Days between Modified Julian Day (1858-11-17) and Unix Epoch (1970-01-01)
-  @mjd_offset 40_587
 
   @spec get_tag(atom) :: integer()
   def get_tag(tag) do
@@ -215,27 +199,7 @@ defmodule Roughtime.Wire do
   @spec parse_timestamp(binary()) :: Calendar.datetime()
   def parse_timestamp(timestamp) do
     <<ts_int::unsigned-little-integer-size(64)>> = timestamp
-
-    {:ok, dt} =
-      cond do
-        # Likely Unix Epoch
-        ts_int < @timestamp_guestimate ->
-          DateTime.from_unix(ts_int, :microsecond)
-
-        # Likely MJD
-        ts_int > @timestamp_guestimate and ts_int < @timestamp_max ->
-          # Most meaningful 3 bytes are MJD, remaining 5 are msec of current
-          # day, hence why we bitwise right shift over.
-          mjd_day = ts_int >>> 40
-          msec = ts_int &&& 0xFFFFFFFFFF
-          today = (mjd_day - @mjd_offset) * 86_400_000_000
-          DateTime.from_unix(today + msec, :microsecond)
-
-        # Likely invalid
-        ts_int > @timestamp_max ->
-          DateTime.from_unix(@timestamp_max, :microsecond)
-      end
-
+    {:ok, dt} = DateTime.from_unix(ts_int, :second)
     dt
   end
 
@@ -244,21 +208,15 @@ defmodule Roughtime.Wire do
   default we generate older messages not based on the I-D, and with Unix epoch
   based timestamps.
   """
-  @spec generate(map(), atom()) :: binary()
-  def generate(message, protocol \\ :ietf) do
-    case protocol do
-      :ietf ->
-        payload = generate_message(message, :mjd)
+  @spec generate(map()) :: binary()
+  def generate(message) do
+    payload = generate_message(message)
 
-        <<
-          @protocol_identifier::unsigned-little-integer-size(64),
-          byte_size(payload)::unsigned-little-integer-size(32),
-          payload::binary
-        >>
-
-      _ ->
-        generate_message(message, :unix)
-    end
+    <<
+      @protocol_identifier::unsigned-little-integer-size(64),
+      byte_size(payload)::unsigned-little-integer-size(32),
+      payload::binary
+    >>
   end
 
   @doc """
@@ -267,8 +225,8 @@ defmodule Roughtime.Wire do
   The maximum length should be no greater than the originating request packet -
   this in turn will define how much padding will be applied.
   """
-  @spec generate_message(map(), atom()) :: binary()
-  def generate_message(message, ts_format \\ :unix) when is_map(message) do
+  @spec generate_message(map()) :: binary()
+  def generate_message(message) when is_map(message) do
     total_pairs = length(Map.keys(message))
 
     message =
@@ -281,7 +239,7 @@ defmodule Roughtime.Wire do
           else
             # We're too nested deep, this code needs to be refactored
             case tag do
-              t when t in [:MIDP, :MINT, :MAXT] -> generate_timestamp(value, ts_format)
+              t when t in [:MIDP, :MINT, :MAXT] -> generate_timestamp(value)
               _ -> value
             end
           end
@@ -331,19 +289,9 @@ defmodule Roughtime.Wire do
   @doc """
   Generate a timestamp
   """
-  @spec generate_timestamp(Calendar.datetime(), atom()) :: binary()
-  def generate_timestamp(timestamp, format \\ :unix) do
-    case format do
-      :unix ->
-        unix_secs = DateTime.to_unix(timestamp, :microsecond)
-        <<unix_secs::unsigned-little-integer-size(64)>>
-
-      :mjd ->
-        mjd_day = Date.diff(DateTime.to_date(timestamp), @mjd)
-        {secs, msecs} = Time.to_seconds_after_midnight(DateTime.to_time(timestamp))
-        msecs = secs * 1_000_000 + msecs
-        ts = (mjd_day <<< 40) + msecs
-        <<ts::unsigned-little-integer-size(64)>>
-    end
+  @spec generate_timestamp(Calendar.datetime()) :: binary()
+  def generate_timestamp(timestamp) do
+    unix_secs = DateTime.to_unix(timestamp, :second)
+    <<unix_secs::unsigned-little-integer-size(64)>>
   end
 end
