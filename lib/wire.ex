@@ -59,6 +59,25 @@ defmodule Roughtime.Wire do
   # "ROUGHTIM"
   @protocol_identifier 0x4D49544847554F52
 
+  @supported_tags %{
+    SIG: 0x00474953,
+    SRV: 0x00565253,
+    VER: 0x00524556,
+    NONC: 0x434E4F4E,
+    DELE: 0x454C4544,
+    PATH: 0x48544150,
+    RADI: 0x49444152,
+    PUBK: 0x4B425550,
+    MIDP: 0x5044494D,
+    SREP: 0x50455253,
+    MINT: 0x544E494D,
+    ROOT: 0x544F4F52,
+    CERT: 0x54524543,
+    MAXT: 0x5458414D,
+    INDX: 0x58444E49,
+    ZZZZ: 0x5A5A5A5A
+  }
+
   # List of tags which can deep nest with other tags
   @nestable_tags [:SREP, :CERT, :DELE]
 
@@ -75,6 +94,11 @@ defmodule Roughtime.Wire do
 
   # Days between Modified Julian Day (1858-11-17) and Unix Epoch (1970-01-01)
   @mjd_offset 40_587
+
+  @spec get_tag(atom) :: integer()
+  def get_tag(tag) do
+    Map.get(@supported_tags, tag)
+  end
 
   @doc "Protocol version - this is only used by IETF versions"
   @version <<11, 0, 0, 128>>
@@ -265,7 +289,15 @@ defmodule Roughtime.Wire do
         {tag, value}
       end)
 
-    {tags, values} = Enum.unzip(message)
+    # "Tags MUST be listed in the same order as the offsets of their values and
+    # MUST also be sorted in ascending order by numeric value"
+    sorted_message =
+      Enum.to_list(message)
+      |> Enum.sort(fn {key1, _v1}, {key2, _v2} ->
+        Roughtime.Wire.get_tag(key1) < Roughtime.Wire.get_tag(key2)
+      end)
+
+    {tags, values} = Enum.unzip(sorted_message)
 
     # Tags - 3 byte tags need padding with 0x0.
     tags =

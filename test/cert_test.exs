@@ -29,7 +29,7 @@ defmodule Roughtime.CertBoxTest do
     pubkey = Roughtime.CertBox.pubkey()
     assert byte_size(pubkey) == 32
 
-    cert =Roughtime.Wire.parse_message(cert, false)
+    cert = Roughtime.Wire.parse_message(cert, false)
 
     assert :libdecaf_curve25519.ed25519ctx_verify(
              Map.fetch!(cert, :SIG),
