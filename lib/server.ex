@@ -1,3 +1,5 @@
+require Logger
+
 defmodule Roughtime.Server do
   use Agent
 
@@ -25,6 +27,7 @@ defmodule Roughtime.Server do
 
     # Parse incoming request
     req = Roughtime.Wire.parse(request)
+    Logger.debug("Received request: #{inspect(req)}")
 
     res_ver = check_version(Map.get(req, :VER))
 
@@ -58,6 +61,8 @@ defmodule Roughtime.Server do
     srep_sig = Roughtime.CertBox.sign(srep_gen)
 
     res = Map.merge(res, %{SREP: srep, SIG: srep_sig})
+
+    Logger.debug("Returning response: #{inspect(res)}")
 
     Roughtime.Wire.generate(res)
   end
