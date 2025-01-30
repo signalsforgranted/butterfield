@@ -79,19 +79,19 @@ defmodule Roughtime.CertBox do
 
     {tmp_pubkey, tmp_prikey} = :libdecaf_curve25519.eddsa_keypair()
     # Generate the CERT block
-    cert = %{
+    dele = %{
       MINT: min_t,
       MAXT: max_t,
       PUBK: tmp_pubkey
     }
 
-    cert_ser = Roughtime.Wire.generate_message(cert)
-    sig = :libdecaf_curve25519.ed25519ctx_sign(cert_ser, lt_prikey, @delegation_context)
+    dele_ser = Roughtime.Wire.generate_message(dele)
+    sig = :libdecaf_curve25519.ed25519ctx_sign(dele_ser, lt_prikey, @delegation_context)
 
     cert =
       Roughtime.Wire.generate_message(%{
         SIG: sig,
-        DELE: cert_ser
+        DELE: dele_ser
       })
 
     Logger.info("Certificate generated:

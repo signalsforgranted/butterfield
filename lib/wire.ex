@@ -59,8 +59,8 @@ defmodule Roughtime.Wire do
 
   @supported_tags %{
     SIG: 0x00474953,
-    SRV: 0x00565253,
     VER: 0x00524556,
+    SRV: 0x00565253,
     NONC: 0x434E4F4E,
     DELE: 0x454C4544,
     PATH: 0x48544150,
@@ -68,6 +68,7 @@ defmodule Roughtime.Wire do
     PUBK: 0x4B425550,
     MIDP: 0x5044494D,
     SREP: 0x50455253,
+    VERS: 0x53524556,
     MINT: 0x544E494D,
     ROOT: 0x544F4F52,
     CERT: 0x54524543,
@@ -226,7 +227,7 @@ defmodule Roughtime.Wire do
   this in turn will define how much padding will be applied.
   """
   @spec generate_message(map()) :: binary()
-  def generate_message(message) when is_map(message) do
+  def generate_message(message) do
     total_pairs = length(Map.keys(message))
 
     message =

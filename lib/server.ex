@@ -36,33 +36,28 @@ defmodule Roughtime.Server do
         hash_function: &Roughtime.MerkleCrypto.hash/1
       )
 
-    res = %{
-      CERT: Roughtime.CertBox.cert(),
+    srep = %{
       VER: res_ver,
+      RADI: @default_precision,
+      MIDP: DateTime.now!("Etc/UTC"),
+      VERS: @supported_version,
+      ROOT: mt.root.value
+    }
 
-      # TODO: What if NONC is missing?!
+    srep_msg = Roughtime.Wire.generate_message(srep)
+    srep_sig = Roughtime.CertBox.sign(srep_msg)
+
+    res = %{
+      SIG: srep_sig,
       NONC: Map.get(req, :NONC),
+      PATH: <<"">>,
+      SREP: srep_msg,
+      CERT: Roughtime.CertBox.cert(),
 
       # Merkle Tree
       # TODO: Add these actual values, rather than lying here
-      INDX: <<0, 0, 0, 0>>,
-      PATH: <<"">>
+      INDX: <<0, 0, 0, 0>>
     }
-
-    srep = %{
-      ROOT: mt.root.value,
-      MIDP: DateTime.now!("Etc/UTC"),
-      # RADI - As of -08, this is now whole seconds
-      RADI: @default_precision
-    }
-
-    # Sign SREP
-    srep_gen = Roughtime.Wire.generate_message(srep)
-    srep_sig = Roughtime.CertBox.sign(srep_gen)
-
-    res = Map.merge(res, %{SREP: srep, SIG: srep_sig})
-
-    Logger.debug("Returning response: #{inspect(res)}")
 
     Roughtime.Wire.generate(res)
   end

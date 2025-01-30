@@ -18,7 +18,7 @@ defmodule Roughtime.ServerTest do
     got = Roughtime.Wire.parse(res)
 
     for {tag, _value} <- got do
-      if not Enum.member?([:VER, :NONC, :CERT, :INDX, :PATH, :SREP, :SIG], tag) do
+      if not Enum.member?([:NONC, :CERT, :INDX, :PATH, :SREP, :SIG], tag) do
         flunk("Contains unexpected tag #{tag}")
       end
     end
