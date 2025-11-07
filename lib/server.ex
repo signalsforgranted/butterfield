@@ -30,6 +30,7 @@ defmodule Roughtime.Server do
     Logger.debug("Received request: #{inspect(req)}")
 
     # TODO: Check the :TYPE tag
+    # TODO: Logic if we don't match the version?
     res_ver = check_version(Map.get(req, :VER))
 
     mt =
@@ -51,7 +52,7 @@ defmodule Roughtime.Server do
     res = %{
       SIG: srep_sig,
       NONC: Map.get(req, :NONC),
-      TYPE: <<1>>,
+      TYPE: Roughtime.Wire.response_type(),
       PATH: <<"">>,
       SREP: srep_msg,
       CERT: Roughtime.CertBox.cert(),

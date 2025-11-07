@@ -32,15 +32,15 @@ defmodule Roughtime.WireTest do
     assert byte_size(Map.get(message, :NONC)) == 64
   end
 
-  test "parse draft-11 response" do
+  test "parse draft-14 response" do
     payload =
-      "test/fixtures/draft11-response.bin"
+      "test/fixtures/roughenough-response-14.bin"
       |> File.read!()
 
     message = Roughtime.Wire.parse(payload)
 
     for {tag, _value} <- message do
-      if not Enum.member?([:VER, :CERT, :INDX, :PATH, :SREP, :SIG], tag) do
+      if not Enum.member?([:SIG, :NONC, :TYPE, :PATH, :SREP, :CERT, :INDX], tag) do
         flunk("Contains unexpected tag #{tag}")
       end
     end

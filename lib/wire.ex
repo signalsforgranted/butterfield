@@ -82,16 +82,22 @@ defmodule Roughtime.Wire do
   @nestable_tags [:SREP, :CERT, :DELE]
 
   @spec get_tag(atom) :: integer()
-  def get_tag(tag) do
-    Map.get(@supported_tags, tag)
-  end
+  def get_tag(tag), do: Map.get(@supported_tags, tag)
 
   @doc "Protocol version - this is only used by IETF versions"
-  @version <<14, 0, 0, 128>>
+  @version <<12, 0, 0, 128>>
   @spec version() :: binary()
-  def version do
-    @version
-  end
+  def version, do: @version
+
+  @doc "Request TYPE value"
+  @request_type <<0, 0, 0, 0>>
+  @spec request_type() :: binary()
+  def request_type, do: @request_type
+
+  @doc "Response TYPE value"
+  @response_type <<1, 0, 0, 0>>
+  @spec response_type() :: binary()
+  def response_type, do: @response_type
 
   @doc """
   Parse a request packet.
