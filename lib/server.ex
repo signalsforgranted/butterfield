@@ -10,7 +10,7 @@ defmodule Roughtime.Server do
   """
 
   # Which version we support - this is draft-ietf-ntp-roughtime-14
-  @supported_version <<14, 0, 0, 128>>
+  @supported_version <<12, 0, 0, 128>>
 
   # Default value for RADI until we know better precision
   # As of -11, this must be at least 3 seconds
