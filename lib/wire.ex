@@ -63,6 +63,7 @@ defmodule Roughtime.Wire do
     SRV: 0x00565253,
     NONC: 0x434E4F4E,
     DELE: 0x454C4544,
+    TYPE: 0x45505954,
     PATH: 0x48544150,
     RADI: 0x49444152,
     PUBK: 0x4B425550,
@@ -86,7 +87,7 @@ defmodule Roughtime.Wire do
   end
 
   @doc "Protocol version - this is only used by IETF versions"
-  @version <<11, 0, 0, 128>>
+  @version <<14, 0, 0, 128>>
   @spec version() :: binary()
   def version do
     @version

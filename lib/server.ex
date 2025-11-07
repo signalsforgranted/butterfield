@@ -9,8 +9,8 @@ defmodule Roughtime.Server do
   "Quid celerius tempore?"
   """
 
-  # Which version we support - this is draft-ietf-ntp-roughtime-11
-  @supported_version <<11, 0, 0, 128>>
+  # Which version we support - this is draft-ietf-ntp-roughtime-14
+  @supported_version <<14, 0, 0, 128>>
 
   # Default value for RADI until we know better precision
   # As of -11, this must be at least 3 seconds
@@ -29,6 +29,7 @@ defmodule Roughtime.Server do
     req = Roughtime.Wire.parse(request)
     Logger.debug("Received request: #{inspect(req)}")
 
+    # TODO: Check the :TYPE tag
     res_ver = check_version(Map.get(req, :VER))
 
     mt =
@@ -50,12 +51,10 @@ defmodule Roughtime.Server do
     res = %{
       SIG: srep_sig,
       NONC: Map.get(req, :NONC),
+      TYPE: <<1>>,
       PATH: <<"">>,
       SREP: srep_msg,
       CERT: Roughtime.CertBox.cert(),
-
-      # Merkle Tree
-      # TODO: Add these actual values, rather than lying here
       INDX: <<0, 0, 0, 0>>
     }
 
