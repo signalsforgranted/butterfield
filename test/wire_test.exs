@@ -59,6 +59,7 @@ defmodule Roughtime.WireTest do
     message = %{
       VER: <<1, 0, 0, 0>>,
       INDX: <<0, 0, 0, 0>>,
+      TYPE: <<0>>,
       PATH: "",
       SREP: %{
         ROOT: <<0>>,
