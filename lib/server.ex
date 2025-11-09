@@ -34,7 +34,7 @@ defmodule Roughtime.Server do
     res_ver = check_version(Map.get(req, :VER))
 
     mt =
-      MerkleTree.new([Map.get(req, :NONC)],
+      MerkleTree.new([request],
         hash_function: &Roughtime.MerkleCrypto.hash/1
       )
 

@@ -23,4 +23,17 @@ defmodule Roughtime.ServerTest do
       end
     end
   end
+
+  @moduletag :capture_log
+  test "insertion into merkle tree can be correctly proven" do
+    {req, _nonc} = Roughtime.Client.generate_request()
+
+    res = Roughtime.Server.handle_request(req)
+    got = Roughtime.Wire.parse(res)
+
+    # I'm not proud of this.
+
+    assert Map.get(Map.get(got, :SREP), :ROOT) == Roughtime.MerkleCrypto.hash(<<0>> <> req)
+
+  end
 end
