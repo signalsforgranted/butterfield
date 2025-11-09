@@ -52,8 +52,7 @@ defmodule App.MixProject do
       formatters: ["html"],
       main: "readme",
       extras: [
-        "README.md",
-        "notes/implementation.md"
+        "README.md"
       ]
     ]
   end
