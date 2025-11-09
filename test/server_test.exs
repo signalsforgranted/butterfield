@@ -27,13 +27,32 @@ defmodule Roughtime.ServerTest do
   @moduletag :capture_log
   test "insertion into merkle tree can be correctly proven" do
     {req, _nonc} = Roughtime.Client.generate_request()
-
     res = Roughtime.Server.handle_request(req)
     got = Roughtime.Wire.parse(res)
 
     # I'm not proud of this.
-
     assert Map.get(Map.get(got, :SREP), :ROOT) == Roughtime.MerkleCrypto.hash(<<0>> <> req)
+  end
 
+  @moduletag :capture_log
+  test "srep signature matches" do
+    {req, _nonc} = Roughtime.Client.generate_request()
+    res = Roughtime.Server.handle_request(req)
+    got = Roughtime.Wire.parse(res)
+
+    raw_srep = Roughtime.Wire.generate_message(Map.get(got, :SREP))
+    assert res =~ raw_srep
+
+    sig = Map.get(got, :SIG)
+    got_sig = Roughtime.CertBox.sign(raw_srep)
+
+    assert sig == got_sig
+
+    assert :libdecaf_curve25519.ed25519ctx_verify(
+             sig,
+             raw_srep,
+             get_in(got, [:CERT, :DELE, :PUBK]),
+             Roughtime.CertBox.response_context()
+           )
   end
 end
