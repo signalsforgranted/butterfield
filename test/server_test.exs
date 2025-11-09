@@ -43,16 +43,13 @@ defmodule Roughtime.ServerTest do
     raw_srep = Roughtime.Wire.generate_message(Map.get(got, :SREP))
     assert res =~ raw_srep
 
-    sig = Map.get(got, :SIG)
     got_sig = Roughtime.CertBox.sign(raw_srep)
+    assert Map.get(got, :SIG) == got_sig
 
-    assert sig == got_sig
-
-    assert :libdecaf_curve25519.ed25519ctx_verify(
-             sig,
-             raw_srep,
-             get_in(got, [:CERT, :DELE, :PUBK]),
-             Roughtime.CertBox.response_context()
+    assert :libdecaf_curve25519.ed25519_verify(
+             Map.get(got, :SIG),
+             Roughtime.CertBox.response_context() <> raw_srep,
+             get_in(got, [:CERT, :DELE, :PUBK])
            )
   end
 end

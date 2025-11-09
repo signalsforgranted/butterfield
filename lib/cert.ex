@@ -86,7 +86,7 @@ defmodule Roughtime.CertBox do
     }
 
     dele_ser = Roughtime.Wire.generate_message(dele)
-    sig = :libdecaf_curve25519.ed25519ctx_sign(dele_ser, lt_prikey, @delegation_context)
+    sig = :libdecaf_curve25519.ed25519_sign(@delegation_context <> dele_ser, lt_prikey)
 
     cert =
       Roughtime.Wire.generate_message(%{
@@ -132,6 +132,6 @@ defmodule Roughtime.CertBox do
   @spec sign(binary()) :: binary()
   def sign(payload) do
     prikey = Map.fetch!(Agent.get(__MODULE__, & &1), :prikey)
-    :libdecaf_curve25519.ed25519ctx_sign(payload, prikey, @response_context)
+    :libdecaf_curve25519.ed25519_sign(@response_context <> payload, prikey)
   end
 end

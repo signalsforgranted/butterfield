@@ -31,25 +31,23 @@ defmodule Roughtime.CertBoxTest do
 
     cert = Roughtime.Wire.parse_message(cert, false)
 
-    assert :libdecaf_curve25519.ed25519ctx_verify(
+    assert :libdecaf_curve25519.ed25519_verify(
              Map.fetch!(cert, :SIG),
-             Map.fetch!(cert, :DELE),
-             Map.fetch!(context, :lt_pubkey),
-             Roughtime.CertBox.delegation_context()
+             Roughtime.CertBox.delegation_context() <> Map.fetch!(cert, :DELE),
+             Map.fetch!(context, :lt_pubkey)
            )
   end
 
-  # @moduletag :capture_log
+  @moduletag :capture_log
   test "can sign a response with temporary keys", _context do
     pubkey = Roughtime.CertBox.pubkey()
     payload = <<"test string">>
     sig = Roughtime.CertBox.sign(payload)
 
-    assert :libdecaf_curve25519.ed25519ctx_verify(
+    assert :libdecaf_curve25519.ed25519_verify(
              sig,
-             payload,
-             pubkey,
-             Roughtime.CertBox.response_context()
+             Roughtime.CertBox.response_context() <> payload,
+             pubkey
            )
   end
 end

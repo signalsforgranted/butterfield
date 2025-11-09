@@ -29,6 +29,7 @@ defmodule Roughtime.Server do
     req = Roughtime.Wire.parse(request)
     Logger.debug("Received request: #{inspect(req)}")
 
+    # TODO: Check SRV tag, we don't support multiple long-term keys.
     # TODO: Check the :TYPE tag
     # TODO: Logic if we don't match the version?
     res_ver = check_version(Map.get(req, :VER))
