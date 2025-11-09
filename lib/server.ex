@@ -27,7 +27,6 @@ defmodule Roughtime.Server do
 
     # Parse incoming request
     req = Roughtime.Wire.parse(request)
-    Logger.debug("Received request: #{inspect(req)}")
 
     # TODO: Check SRV tag, we don't support multiple long-term keys.
     # TODO: Check the :TYPE tag
