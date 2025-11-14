@@ -9,6 +9,9 @@ build:
 iex:
 	@${BASE_CMD} iex -S mix
 
+shell:
+	@${BASE_CMD} /bin/sh
+
 test:
 	@${BASE_CMD} mix test
 
