@@ -5,7 +5,7 @@ defmodule App.MixProject do
     [
       name: "Butterfield",
       app: :butterfield,
-      version: "0.1.0",
+      version: "0.8.0",
       elixir: "~> 1.19",
       elixirc_options: [
         warnings_as_errors: true
@@ -32,12 +32,12 @@ defmodule App.MixProject do
       {:observer_cli, "1.8.0"},
 
       # Development
-      {:dialyxir, "~> 1.4.0", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.4.7", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.7.13", only: [:dev, :test], runtime: false},
-      {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
-      {:sbom, "~> 0.6", only: :dev, runtime: false},
-      {:ex_doc, "~> 0.30.3", only: [:dev], runtime: false},
-      {:incendium, "~> 0.4.0", only: [:dev], runtime: false}
+      {:sobelow, "~> 0.14.1", only: [:dev, :test], runtime: false},
+      {:sbom, "~> 0.7", only: :dev, runtime: false},
+      {:ex_doc, "~> 0.39.1", only: [:dev], runtime: false},
+      {:incendium, "~> 0.5.0", only: [:dev], runtime: false}
     ]
   end
 
