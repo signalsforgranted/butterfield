@@ -46,10 +46,11 @@ defmodule Roughtime.ServerTest do
     got_sig = Roughtime.CertBox.sign(raw_srep)
     assert Map.get(got, :SIG) == got_sig
 
-    assert :libdecaf_curve25519.ed25519_verify(
-             Map.get(got, :SIG),
+    assert :public_key.verify(
              Roughtime.CertBox.response_context() <> raw_srep,
-             get_in(got, [:CERT, :DELE, :PUBK])
+             :ignored,
+             Map.get(got, :SIG),
+             {:ed_pub, :ed25519, get_in(got, [:CERT, :DELE, :PUBK])}
            )
   end
 end

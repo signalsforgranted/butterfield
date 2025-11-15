@@ -19,7 +19,7 @@ defmodule App.MixProject do
 
   def application do
     [
-      extra_applications: [:logger],
+      extra_applications: [:logger, :public_key, :crypto],
       mod: {Roughtime.Application, []}
     ]
   end
@@ -27,7 +27,6 @@ defmodule App.MixProject do
   defp deps do
     [
       # Application
-      {:libdecaf, "~> 2.1.1"},
       {:merkle_tree, "~> 2.0"},
       {:observer_cli, "1.8.0"},
 

@@ -3,7 +3,7 @@ defmodule Roughtime.CertBoxTest do
   doctest Roughtime.CertBox
 
   setup do
-    {pubkey, prikey} = :libdecaf_curve25519.eddsa_keypair()
+    {pubkey, prikey} = :crypto.generate_key(:eddsa, :ed25519)
 
     {:ok, box} =
       Roughtime.CertBox.start_link(%{
@@ -31,10 +31,11 @@ defmodule Roughtime.CertBoxTest do
 
     cert = Roughtime.Wire.parse_message(cert, false)
 
-    assert :libdecaf_curve25519.ed25519_verify(
-             Map.fetch!(cert, :SIG),
+    assert :public_key.verify(
              Roughtime.CertBox.delegation_context() <> Map.fetch!(cert, :DELE),
-             Map.fetch!(context, :lt_pubkey)
+             :ignored,
+             Map.fetch!(cert, :SIG),
+             {:ed_pub, :ed25519, Map.fetch!(context, :lt_pubkey)}
            )
   end
 
@@ -44,10 +45,11 @@ defmodule Roughtime.CertBoxTest do
     payload = <<"test string">>
     sig = Roughtime.CertBox.sign(payload)
 
-    assert :libdecaf_curve25519.ed25519_verify(
-             sig,
+    assert :public_key.verify(
              Roughtime.CertBox.response_context() <> payload,
-             pubkey
+             :ignored,
+             sig,
+             {:ed_pub, :ed25519, pubkey}
            )
   end
 end

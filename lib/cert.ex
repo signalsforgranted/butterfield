@@ -22,8 +22,11 @@ defmodule Roughtime.CertBox do
   # Default duration of temporary certificates made off the long-term
   @default_cert_duration 90
 
-  # Context Strings are required when signing messages, thus we are very
-  # specifically using "contextual" Ed25519 or otherwise known as Ed25519ctx.
+  # Context Strings are required when signing messages, earlier versions used
+  # "Ed25519ctx" cryptographic functions, however as these are not well
+  # supported across libraries and languages, these context strings are now
+  # prepended before the payload to be signed.
+  #
   # Roughtime responses have two signatures - one for the temporal certificate,
   # which is everything inside `DELE` tag.
   @doc """
@@ -59,7 +62,7 @@ defmodule Roughtime.CertBox do
         {dc_pubkey, dc_prikey}
       else
         Logger.warning("No long-term keys provided, generating some")
-        :libdecaf_curve25519.eddsa_keypair()
+        :crypto.generate_key(:eddsa, :ed25519)
       end
 
     duration = Map.get(keys, :duration, @default_cert_duration)
@@ -77,7 +80,7 @@ defmodule Roughtime.CertBox do
     min_t = DateTime.now!("Etc/UTC")
     max_t = DateTime.add(min_t, duration, :day)
 
-    {tmp_pubkey, tmp_prikey} = :libdecaf_curve25519.eddsa_keypair()
+    {tmp_pubkey, tmp_prikey} = :crypto.generate_key(:eddsa, :ed25519)
     # Generate the CERT block
     dele = %{
       MINT: min_t,
@@ -86,7 +89,14 @@ defmodule Roughtime.CertBox do
     }
 
     dele_ser = Roughtime.Wire.generate_message(dele)
-    sig = :libdecaf_curve25519.ed25519_sign(@delegation_context <> dele_ser, lt_prikey)
+
+    sig =
+      :public_key.sign(
+        @delegation_context <> dele_ser,
+        :ignored,
+        {:ed_pri, :ed25519, lt_pubkey, lt_prikey},
+        []
+      )
 
     cert =
       Roughtime.Wire.generate_message(%{
@@ -132,6 +142,12 @@ defmodule Roughtime.CertBox do
   @spec sign(binary()) :: binary()
   def sign(payload) do
     prikey = Map.fetch!(Agent.get(__MODULE__, & &1), :prikey)
-    :libdecaf_curve25519.ed25519_sign(@response_context <> payload, prikey)
+
+    :public_key.sign(
+      @response_context <> payload,
+      :ignored,
+      {:ed_pri, :ed25519, pubkey(), prikey},
+      []
+    )
   end
 end
