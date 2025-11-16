@@ -16,22 +16,27 @@ defmodule Roughtime.Server do
   # As of -11, this must be at least 3 seconds
   @default_precision <<3, 0, 0, 0>>
 
+  # Request payloads should be at least this big to mitigate DDoS amplification
+  # types of attacks with the protocol.
+  @min_request_size 1024
+
   @spec start_link(any()) :: Agent.on_start()
   def start_link(_opts) do
     Agent.start_link(fn -> %{} end, name: __MODULE__)
   end
 
   @spec handle_request(binary()) :: binary()
-  def handle_request(request) do
-    # TODO: Check length - must be at least 1024 bytes in length
-
+  def handle_request(request)
+      when is_binary(request) and byte_size(request) >= @min_request_size do
     # Parse incoming request
     req = Roughtime.Wire.parse(request)
+
+    # Get the version
+    res_ver = check_version(Map.get(req, :VER))
 
     # TODO: Check SRV tag, we don't support multiple long-term keys.
     # TODO: Check the :TYPE tag
     # TODO: Logic if we don't match the version?
-    res_ver = check_version(Map.get(req, :VER))
 
     # We're okay? Let's send a response
     generate_response(req, request, res_ver)
