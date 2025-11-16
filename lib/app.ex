@@ -19,6 +19,8 @@ defmodule Roughtime.Application do
          cert_duration: cert_duration
        }},
       Roughtime.Handler,
+      # TODO pass in config options
+      Roughtime.MerkleTree,
       Roughtime.Server
     ]
 

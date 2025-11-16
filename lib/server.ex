@@ -33,17 +33,20 @@ defmodule Roughtime.Server do
     # TODO: Logic if we don't match the version?
     res_ver = check_version(Map.get(req, :VER))
 
-    mt =
-      MerkleTree.new([request],
-        hash_function: &Roughtime.MerkleCrypto.hash/1
-      )
+    # We're okay? Let's send a response
+    generate_response(req, request, res_ver)
+  end
+
+  @spec generate_response(binary(), any(), binary()) :: binary()
+  defp generate_response(req, request, ver) do
+    [root, index, path] = Roughtime.MerkleTree.update_tree(request)
 
     srep = %{
-      VER: res_ver,
+      VER: ver,
       RADI: @default_precision,
       MIDP: DateTime.now!("Etc/UTC"),
       VERS: @supported_version,
-      ROOT: mt.root.value
+      ROOT: root
     }
 
     srep_msg = Roughtime.Wire.generate_message(srep)
@@ -53,10 +56,10 @@ defmodule Roughtime.Server do
       SIG: srep_sig,
       NONC: Map.get(req, :NONC),
       TYPE: Roughtime.Wire.response_type(),
-      PATH: <<"">>,
+      PATH: path,
       SREP: srep_msg,
       CERT: Roughtime.CertBox.cert(),
-      INDX: <<0, 0, 0, 0>>
+      INDX: index
     }
 
     Roughtime.Wire.generate(res)
