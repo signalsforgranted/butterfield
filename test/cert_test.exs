@@ -22,6 +22,12 @@ defmodule Roughtime.CertBoxTest do
   end
 
   @moduletag :capture_log
+  test "generates hash of long-term public key" do
+    pubkey_hash = Roughtime.CertBox.lt_pubkey_hash()
+    assert byte_size(pubkey_hash) == 32
+  end
+
+  @moduletag :capture_log
   test "generates new keys and valid certificate with signature", context do
     cert = Roughtime.CertBox.cert()
     assert cert != nil

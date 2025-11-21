@@ -88,8 +88,8 @@ defmodule Roughtime.CertBox do
       PUBK: tmp_pubkey
     }
 
+    lt_pubkey_hash = <<:crypto.hash(:sha512, lt_pubkey)::binary-size(32)>>
     dele_ser = Roughtime.Wire.generate_message(dele)
-
     sig =
       :public_key.sign(
         @delegation_context <> dele_ser,
@@ -116,7 +116,8 @@ defmodule Roughtime.CertBox do
       max_t: max_t,
       prikey: tmp_prikey,
       pubkey: tmp_pubkey,
-      lt_pubkey: lt_pubkey
+      lt_pubkey: lt_pubkey,
+      lt_pubkey_hash: lt_pubkey_hash
     }
   end
 
@@ -134,6 +135,15 @@ defmodule Roughtime.CertBox do
   @spec pubkey() :: binary()
   def pubkey do
     Map.fetch!(Agent.get(__MODULE__, & &1), :pubkey)
+  end
+
+  @doc """
+  Return the first 32 bytes off the SHA-512 hash of the long term public key,
+  required to handle logic for the SRV record type.
+  """
+  @spec lt_pubkey_hash() :: binary()
+  def lt_pubkey_hash do
+    Map.fetch!(Agent.get(__MODULE__, & &1), :lt_pubkey_hash)
   end
 
   @doc """
