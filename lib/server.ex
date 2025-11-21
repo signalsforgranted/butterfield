@@ -34,20 +34,30 @@ defmodule Roughtime.Server do
     # Get the version
     res_ver = check_version(Map.get(req, :VER))
 
-    # TODO: Check SRV tag, we don't support multiple long-term keys.
-    # TODO: Check the :TYPE tag
-    # TODO: Logic if we don't match the version?
-
-    # We're okay? Let's send a response
-    generate_response(req, request, res_ver)
+    case res_ver do
+      @supported_version -> handle_rev_14(req, request)
+      # Do nothing for clients which we don't support, just log
+      _ -> Logger.debug("Received unsupported version #{res_ver}")
+    end
   end
 
-  @spec generate_response(binary(), any(), binary()) :: binary()
-  defp generate_response(req, request, ver) do
+  @spec handle_rev_14(binary(), any()) :: binary()
+  defp handle_rev_14(req, request) when is_map_key(req, :TYPE) do
+    # TODO: Check SRV tag, we don't support multiple long-term keys.
+
+    case Map.fetch!(req, :TYPE) do
+      <<0>> -> generate_response(req, request)
+      <<1>> -> Logger.debug("Received a response TYPE in a request?!")
+      _ -> Logger.debug("Received an unsupported TYPE")
+    end
+  end
+
+  @spec generate_response(binary(), any()) :: binary()
+  defp generate_response(req, request) do
     [root, index, path] = Roughtime.MerkleTree.update_tree(request)
 
     srep = %{
-      VER: ver,
+      VER: Roughtime.Wire.version(),
       RADI: @default_precision,
       MIDP: DateTime.now!("Etc/UTC"),
       VERS: @supported_version,

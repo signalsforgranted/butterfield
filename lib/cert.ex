@@ -90,6 +90,7 @@ defmodule Roughtime.CertBox do
 
     lt_pubkey_hash = <<:crypto.hash(:sha512, lt_pubkey)::binary-size(32)>>
     dele_ser = Roughtime.Wire.generate_message(dele)
+
     sig =
       :public_key.sign(
         @delegation_context <> dele_ser,
