@@ -27,6 +27,19 @@ defmodule Roughtime.Server do
 
   @spec handle_request(binary()) :: binary()
   def handle_request(request)
+      when is_binary(request) and byte_size(request) < @min_request_size do
+    {:error, "Incoming request too short"}
+  end
+
+  @doc """
+  Process a roughtime request.
+
+  Returns:
+    {:ok, binary()} with encoded payload to return to client or,
+    {:error, string()} with a human readable reason why the request failed.
+  """
+  @spec handle_request(binary()) :: binary()
+  def handle_request(request)
       when is_binary(request) and byte_size(request) >= @min_request_size do
     # Parse incoming request
     req = Roughtime.Wire.parse(request)
@@ -37,7 +50,7 @@ defmodule Roughtime.Server do
     case res_ver do
       @supported_version -> handle_rev_14(req, request)
       # Do nothing for clients which we don't support, just log
-      _ -> Logger.debug("Received unsupported version #{res_ver}")
+      _ -> {:error, "Received unsupported version #{res_ver}"}
     end
   end
 
@@ -47,8 +60,8 @@ defmodule Roughtime.Server do
 
     case Map.fetch!(req, :TYPE) do
       <<0>> -> generate_response(req, request)
-      <<1>> -> Logger.debug("Received a response TYPE in a request?!")
-      _ -> Logger.debug("Received an unsupported TYPE")
+      <<1>> -> {:error, "Received a response TYPE in a request?!"}
+      _ -> {:error, "Received an unsupported TYPE"}
     end
   end
 
@@ -77,7 +90,7 @@ defmodule Roughtime.Server do
       INDX: index
     }
 
-    Roughtime.Wire.generate(res)
+    {:ok, Roughtime.Wire.generate(res)}
   end
 
   defp check_version(vers) do

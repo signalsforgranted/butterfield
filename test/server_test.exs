@@ -14,7 +14,7 @@ defmodule Roughtime.ServerTest do
     {req, nonc} = Roughtime.Client.generate_request()
     assert nonc != false
 
-    res = Roughtime.Server.handle_request(req)
+    {:ok, res} = Roughtime.Server.handle_request(req)
     got = Roughtime.Wire.parse(res)
 
     for {tag, _value} <- got do
@@ -25,9 +25,76 @@ defmodule Roughtime.ServerTest do
   end
 
   @moduletag :capture_log
+  test "ignores unsupported versions" do
+    # No pad, thus too short
+    badver_req =
+      Roughtime.Wire.generate(%{
+        ZZZZ: :erlang.list_to_binary(List.duplicate(0, 944)),
+        TYPE: <<0>>,
+        NONC: :crypto.strong_rand_bytes(32),
+        VER: <<21, 20, 19, 128>>
+      })
+
+    {badver_res, _badver_reason} = Roughtime.Server.handle_request(badver_req)
+    assert badver_res != :ok
+  end
+
+  @moduletag :capture_log
+  test "ignores no/insufficent padding" do
+    # No pad, thus too short
+    nopad_req =
+      Roughtime.Wire.generate(%{
+        TYPE: <<0>>,
+        NONC: :crypto.strong_rand_bytes(32),
+        VER: Roughtime.Wire.version()
+      })
+
+    {nopad_res, _nopad_reason} = Roughtime.Server.handle_request(nopad_req)
+    assert nopad_res != :ok
+
+    shortpad_req =
+      Roughtime.Wire.generate(%{
+        ZZZZ: :erlang.list_to_binary(List.duplicate(0, 6)),
+        TYPE: <<0>>,
+        NONC: :crypto.strong_rand_bytes(32),
+        VER: Roughtime.Wire.version()
+      })
+
+    {shortpad_res, _shortpad_reason} = Roughtime.Server.handle_request(shortpad_req)
+    assert shortpad_res != :ok
+  end
+
+  @moduletag :capture_log
+  test "ignores invalid types" do
+    # Response type in request
+    wrongtype_req =
+      Roughtime.Wire.generate(%{
+        ZZZZ: :erlang.list_to_binary(List.duplicate(0, 944)),
+        TYPE: <<1>>,
+        NONC: :crypto.strong_rand_bytes(32),
+        VER: Roughtime.Wire.version()
+      })
+
+    {wrongtype_res, _wrongtype_reason} = Roughtime.Server.handle_request(wrongtype_req)
+    assert wrongtype_res != :ok
+
+    # Not a real type
+    weirdtype_req =
+      Roughtime.Wire.generate(%{
+        ZZZZ: :erlang.list_to_binary(List.duplicate(0, 944)),
+        TYPE: <<180>>,
+        NONC: :crypto.strong_rand_bytes(32),
+        VER: Roughtime.Wire.version()
+      })
+
+    {weirdtype_res, _weirdtype_reason} = Roughtime.Server.handle_request(weirdtype_req)
+    assert weirdtype_res != :ok
+  end
+
+  @moduletag :capture_log
   test "insertion into merkle tree can be correctly proven" do
     {req, _nonc} = Roughtime.Client.generate_request()
-    res = Roughtime.Server.handle_request(req)
+    {:ok, res} = Roughtime.Server.handle_request(req)
     got = Roughtime.Wire.parse(res)
 
     # I'm not proud of this.
@@ -37,7 +104,7 @@ defmodule Roughtime.ServerTest do
   @moduletag :capture_log
   test "srep signature matches" do
     {req, _nonc} = Roughtime.Client.generate_request()
-    res = Roughtime.Server.handle_request(req)
+    {:ok, res} = Roughtime.Server.handle_request(req)
     got = Roughtime.Wire.parse(res)
 
     raw_srep = Roughtime.Wire.generate_message(Map.get(got, :SREP))
