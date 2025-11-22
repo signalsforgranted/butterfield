@@ -13,7 +13,7 @@ shell:
 	@${BASE_CMD} /bin/sh
 
 test:
-	@${BASE_CMD} mix test
+	@${BASE_CMD} mix test --no-start
 
 analyse:
 	-@${BASE_CMD} mix dialyzer --quiet --format dialyxir
