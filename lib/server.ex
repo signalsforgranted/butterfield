@@ -59,8 +59,8 @@ defmodule Roughtime.Server do
     # TODO: Check SRV tag, we don't support multiple long-term keys.
 
     case Map.fetch!(req, :TYPE) do
-      <<0>> -> generate_response(req, request)
-      <<1>> -> {:error, "Received a response TYPE in a request?!"}
+      <<0, 0, 0, 0>> -> generate_response(req, request)
+      <<1, 0, 0, 0>> -> {:error, "Received a response TYPE in a request?!"}
       _ -> {:error, "Received an unsupported TYPE"}
     end
   end

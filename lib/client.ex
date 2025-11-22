@@ -17,7 +17,7 @@ defmodule Roughtime.Client do
       # 944 bytes of padding as it should get us to the required amount of
       # padding with the rest of the data structure included to make 1024 bytes
       ZZZZ: :erlang.list_to_binary(List.duplicate(0, 944)),
-      TYPE: <<0>>,
+      TYPE: Roughtime.Wire.request_type(),
       NONC: :crypto.strong_rand_bytes(32),
       VER: Roughtime.Wire.version()
     }

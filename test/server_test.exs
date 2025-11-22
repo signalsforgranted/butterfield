@@ -30,7 +30,7 @@ defmodule Roughtime.ServerTest do
     badver_req =
       Roughtime.Wire.generate(%{
         ZZZZ: :erlang.list_to_binary(List.duplicate(0, 944)),
-        TYPE: <<0>>,
+        TYPE: Roughtime.Wire.request_type(),
         NONC: :crypto.strong_rand_bytes(32),
         VER: <<21, 20, 19, 128>>
       })
@@ -44,7 +44,7 @@ defmodule Roughtime.ServerTest do
     # No pad, thus too short
     nopad_req =
       Roughtime.Wire.generate(%{
-        TYPE: <<0>>,
+        TYPE: Roughtime.Wire.request_type(),
         NONC: :crypto.strong_rand_bytes(32),
         VER: Roughtime.Wire.version()
       })
@@ -55,7 +55,7 @@ defmodule Roughtime.ServerTest do
     shortpad_req =
       Roughtime.Wire.generate(%{
         ZZZZ: :erlang.list_to_binary(List.duplicate(0, 6)),
-        TYPE: <<0>>,
+        TYPE: Roughtime.Wire.request_type(),
         NONC: :crypto.strong_rand_bytes(32),
         VER: Roughtime.Wire.version()
       })
@@ -70,13 +70,13 @@ defmodule Roughtime.ServerTest do
     wrongtype_req =
       Roughtime.Wire.generate(%{
         ZZZZ: :erlang.list_to_binary(List.duplicate(0, 944)),
-        TYPE: <<1>>,
+        TYPE: Roughtime.Wire.response_type(),
         NONC: :crypto.strong_rand_bytes(32),
         VER: Roughtime.Wire.version()
       })
 
     {wrongtype_res, _wrongtype_reason} = Roughtime.Server.handle_request(wrongtype_req)
-    assert wrongtype_res != :ok
+    assert wrongtype_res == :error
 
     # Not a real type
     weirdtype_req =
