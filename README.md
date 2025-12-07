@@ -16,15 +16,8 @@ a type of portable sundial found in France in the late 17th and 18th century.
 
 ## Building & Running
 
-In order to get the system up and running you'll either need a container runtime
-like Docker or Podman, or for containerless setups you'll need an environment
-with CMake and Python3 in addition to Elixir ~> 1.15 in order to build libdecaf
-which provides the eliptical cryptography functions necessary for signing and
-validating.
-
-The included Makefile includes a `make build` step which will create
-the container image to run in your preferred container runtime, `make iex` will
-start the service and provide the iex REPL.
+If you don't already have a compatible Elixir runtime, there's an included
+Dockerfile which is used by the Makefile for building, testing, and debugging.
 
 ## Developing
 
@@ -35,7 +28,7 @@ and code formatting steps included.
 
 ## License
 
-Copyright 2023-
+Copyright 2023- the Butterfield authors.
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use
 this file except in compliance with the License.  You may obtain a copy of the
