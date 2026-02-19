@@ -1,6 +1,6 @@
 require Logger
 
-defmodule Roughtime.Handler do
+defmodule Roughtime.UDPHandler do
   @moduledoc false
   use GenServer
 
@@ -19,7 +19,7 @@ defmodule Roughtime.Handler do
 
   @impl true
   def init(_params) do
-    Logger.info("Starting roughtime server on port #{default_port()}...")
+    Logger.info("Starting roughtime server on UDP port #{default_port()}...")
     :gen_udp.open(default_port(), [:binary, active: true])
   end
 

@@ -18,7 +18,7 @@ defmodule Roughtime.Application do
          lt_pubkey: lt_pubkey,
          cert_duration: cert_duration
        }},
-      Roughtime.Handler,
+      Roughtime.UDPHandler,
       # TODO pass in config options
       Roughtime.MerkleTree,
       Roughtime.Server
