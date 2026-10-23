@@ -1,6 +1,6 @@
 .PHONY: build dev test bench
 
-BASE_CMD=docker run -it --rm -p 2002:2002/udp -v ${PWD}:/usr/src/app butterfield
+BASE_CMD=docker run -it --rm -p 5319:5319/udp -v ${PWD}:/usr/src/app butterfield
 
 build:
 	@docker build -t butterfield .

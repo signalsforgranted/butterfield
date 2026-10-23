@@ -7,7 +7,7 @@ import Config
 # will give the system enough to start from nothing.
 config :butterfield,
   # UDP Port to listen on
-  port: String.to_integer(System.get_env("BTRFLD_PORT") || "2002"),
+  port: String.to_integer(System.get_env("BTRFLD_PORT") || "5319"),
 
   # Long-term keys:
   # Both must be stored with Base 64 encoding

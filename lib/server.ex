@@ -39,6 +39,7 @@ defmodule Roughtime.Server do
     with {:ok, req} <- parse(request),
          :ok <- check_version(Map.get(req, :VER)),
          :ok <- check_type(Map.get(req, :TYPE)),
+         :ok <- check_srv(Map.get(req, :SRV)),
          :ok <- check_nonce(Map.get(req, :NONC)) do
       generate_response(req, request)
     end
@@ -56,6 +57,14 @@ defmodule Roughtime.Server do
 
   defp check_type(type) do
     if type == <<0, 0, 0, 0>>, do: :ok, else: {:error, "TYPE missing or not a request"}
+  end
+
+  defp check_srv(nil), do: :ok
+
+  defp check_srv(srv) do
+    if srv == Roughtime.CertBox.lt_pubkey_hash(),
+      do: :ok,
+      else: {:error, "SRV does not match the long-term key"}
   end
 
   defp check_nonce(nonce) do

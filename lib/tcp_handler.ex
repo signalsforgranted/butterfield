@@ -25,7 +25,8 @@ defmodule Roughtime.TCPHandler do
         :binary,
         active: true,
         reuseaddr: true,
-        backlog: 4096 # TODO This should be configuration
+        # TODO This should be configuration
+        backlog: 4096
       ])
 
     {:ok, %{state | socket: socket}}
@@ -34,7 +35,7 @@ defmodule Roughtime.TCPHandler do
   @impl true
   def handle_info(:accept, %{socket: socket} = state) do
     {:ok, _} = :gen_tcp.accept(socket)
-    Logger.debug "Connection from #{socket}"
+    Logger.debug("Connection from #{socket}")
     {:noreply, state}
   end
 

@@ -65,7 +65,7 @@ defmodule Roughtime.CertBox do
         :crypto.generate_key(:eddsa, :ed25519)
       end
 
-    duration = Map.get(keys, :duration, @default_cert_duration)
+    duration = Map.get(keys, :cert_duration, @default_cert_duration)
 
     keys = generate(lt_pubkey, lt_prikey, duration)
     Agent.start_link(fn -> keys end, name: __MODULE__)
@@ -88,7 +88,7 @@ defmodule Roughtime.CertBox do
       PUBK: tmp_pubkey
     }
 
-    lt_pubkey_hash = <<:crypto.hash(:sha512, lt_pubkey)::binary-size(32)>>
+    lt_pubkey_hash = <<:crypto.hash(:sha512, <<0xFF>> <> lt_pubkey)::binary-size(32)>>
     dele_ser = Roughtime.Wire.generate_message(dele)
 
     sig =
