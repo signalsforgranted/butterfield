@@ -1,5 +1,3 @@
-require Logger
-
 defmodule Roughtime.Server do
   use Agent
 

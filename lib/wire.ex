@@ -147,8 +147,8 @@ defmodule Roughtime.Wire do
     tags_len = total_pairs * 32
 
     <<
-      offsets::bitstring-size(offset_len),
-      tags::bitstring-size(tags_len),
+      offsets::bitstring-size(^offset_len),
+      tags::bitstring-size(^tags_len),
       values::binary
     >> = offsets_tags_values
 
