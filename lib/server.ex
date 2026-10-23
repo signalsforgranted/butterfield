@@ -23,12 +23,6 @@ defmodule Roughtime.Server do
     Agent.start_link(fn -> %{} end, name: __MODULE__)
   end
 
-  @spec handle_request(binary()) :: binary()
-  def handle_request(request)
-      when is_binary(request) and byte_size(request) < @min_request_size do
-    {:error, "Incoming request too short"}
-  end
-
   @doc """
   Process a roughtime request.
 
@@ -36,31 +30,38 @@ defmodule Roughtime.Server do
     {:ok, binary()} with encoded payload to return to client or,
     {:error, string()} with a human readable reason why the request failed.
   """
-  @spec handle_request(binary()) :: binary()
-  def handle_request(request)
-      when is_binary(request) and byte_size(request) >= @min_request_size do
-    # Parse incoming request
-    req = Roughtime.Wire.parse(request)
+  def handle_request(request) when byte_size(request) < @min_request_size do
+    {:error, "Incoming request too short"}
+  end
 
-    # Get the version
-    res_ver = check_version(Map.get(req, :VER))
-
-    case res_ver do
-      @supported_version -> handle_rev_14(req, request)
-      # Do nothing for clients which we don't support, just log
-      _ -> {:error, "Received unsupported version #{res_ver}"}
+  @spec handle_request(binary()) :: {:ok, binary()} | {:error, String.t()}
+  def handle_request(request) when is_binary(request) do
+    with {:ok, req} <- parse(request),
+         :ok <- check_version(Map.get(req, :VER)),
+         :ok <- check_type(Map.get(req, :TYPE)),
+         :ok <- check_nonce(Map.get(req, :NONC)) do
+      generate_response(req, request)
     end
   end
 
-  @spec handle_rev_14(binary(), any()) :: binary()
-  defp handle_rev_14(req, request) when is_map_key(req, :TYPE) do
-    # TODO: Check SRV tag, we don't support multiple long-term keys.
+  defp parse(request) do
+    {:ok, Roughtime.Wire.parse(request)}
+  rescue
+    _ -> {:error, "Malformed packet"}
+  end
 
-    case Map.fetch!(req, :TYPE) do
-      <<0, 0, 0, 0>> -> generate_response(req, request)
-      <<1, 0, 0, 0>> -> {:error, "Received a response TYPE in a request?!"}
-      _ -> {:error, "Received an unsupported TYPE"}
-    end
+  defp check_version(<<1::unsigned-little-integer-size(32), _::binary>>), do: :ok
+  defp check_version(<<_::binary-size(4), rest::binary>>), do: check_version(rest)
+  defp check_version(_), do: {:error, "No supported version in VER"}
+
+  defp check_type(type) do
+    if type == <<0, 0, 0, 0>>, do: :ok, else: {:error, "TYPE missing or not a request"}
+  end
+
+  defp check_nonce(nonce) do
+    if is_binary(nonce) and byte_size(nonce) == 32,
+      do: :ok,
+      else: {:error, "NONC missing or not 32 bytes"}
   end
 
   @spec generate_response(binary(), any()) :: binary()
@@ -89,10 +90,5 @@ defmodule Roughtime.Server do
     }
 
     {:ok, Roughtime.Wire.generate(res)}
-  end
-
-  defp check_version(vers) do
-    vers = for <<version::size(4)-binary <- vers>>, do: version
-    Enum.find(vers, &(&1 == @supported_version))
   end
 end

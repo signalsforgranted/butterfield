@@ -49,7 +49,7 @@ defmodule Roughtime.WireTest do
   end
 
   test "generates valid request" do
-    message = %{"TEST": "test", VER: <<1, 0, 0, 0>>, NONC: :crypto.strong_rand_bytes(32)}
+    message = %{TEST: "test", VER: <<1, 0, 0, 0>>, NONC: :crypto.strong_rand_bytes(32)}
     generated = Roughtime.Wire.generate(message)
     result = Roughtime.Wire.parse(generated)
     {test_value, known} = Map.pop(message, :TEST)
