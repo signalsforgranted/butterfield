@@ -87,7 +87,7 @@ defmodule Roughtime.Wire do
   def get_tag(tag), do: Map.get(@supported_tags, tag)
 
   @doc "Protocol version - this is only used by IETF versions"
-  @version <<12, 0, 0, 128>>
+  @version <<1, 0, 0, 0>>
   @spec version() :: binary()
   def version, do: @version
 

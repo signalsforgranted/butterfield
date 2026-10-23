@@ -7,11 +7,11 @@ defmodule Roughtime.Server do
   "Quid celerius tempore?"
   """
 
-  # Which version we support - this is draft-ietf-ntp-roughtime-14
-  @supported_version <<12, 0, 0, 128>>
+  # Which version we support - this is version 1 (RFC 10049).
+  # This value should match Roughtime.Wire.version().
+  @supported_version <<1, 0, 0, 0>>
 
   # Default value for RADI until we know better precision
-  # As of -11, this must be at least 3 seconds
   @default_precision <<3, 0, 0, 0>>
 
   # Request payloads should be at least this big to mitigate DDoS amplification
@@ -68,7 +68,7 @@ defmodule Roughtime.Server do
     [root, index, path] = Roughtime.MerkleTree.update_tree(request)
 
     srep = %{
-      VER: Roughtime.Wire.version(),
+      VER: @supported_version,
       RADI: @default_precision,
       MIDP: DateTime.now!("Etc/UTC"),
       VERS: @supported_version,
