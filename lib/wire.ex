@@ -80,6 +80,8 @@ defmodule Roughtime.Wire do
 
   # List of tags which can deep nest with other tags
   @nestable_tags [:SREP, :CERT, :DELE]
+  @nestable_names Enum.map(@nestable_tags, &Atom.to_string/1)
+  @tag_atoms Map.new(@supported_tags, fn {tag, _} -> {Atom.to_string(tag), tag} end)
 
   @spec get_tag(atom) :: integer()
   def get_tag(tag), do: Map.get(@supported_tags, tag)
@@ -177,7 +179,7 @@ defmodule Roughtime.Wire do
 
       # Nest into tags that may contain other tags
       value =
-        if recurse and Enum.member?(@nestable_tags, String.to_atom(tag)) do
+        if recurse and tag in @nestable_names do
           parse_message(:binary.part(values, Enum.at(offset, 0), len))
         else
           :binary.part(values, Enum.at(offset, 0), len)
@@ -192,7 +194,7 @@ defmodule Roughtime.Wire do
 
       [tag, value]
     end)
-    |> Map.new(fn [k, v] -> {String.to_existing_atom(k), v} end)
+    |> Map.new(fn [k, v] -> {Map.get(@tag_atoms, k, k), v} end)
   end
 
   @doc """

@@ -10,7 +10,7 @@ defmodule Roughtime.WireTest do
     message = Roughtime.Wire.parse(payload)
 
     for {tag, _value} <- message do
-      if not Enum.member?([:PAD, :NONC, :VER], tag) do
+      if not Enum.member?(["PAD", :NONC, :VER], tag) do
         flunk("Contains unexpected tag #{tag}")
       end
     end
@@ -24,7 +24,7 @@ defmodule Roughtime.WireTest do
     message = Roughtime.Wire.parse(payload)
 
     for {tag, _value} <- message do
-      if not Enum.member?([:PAD, :NONC], tag) do
+      if not Enum.member?(["PAD", :NONC], tag) do
         flunk("Contains unexpected tag #{tag}")
       end
     end
@@ -49,10 +49,11 @@ defmodule Roughtime.WireTest do
   end
 
   test "generates valid request" do
-    message = %{TEST: "test", VER: <<1, 0, 0, 0>>, NONC: :crypto.strong_rand_bytes(32)}
+    message = %{"TEST": "test", VER: <<1, 0, 0, 0>>, NONC: :crypto.strong_rand_bytes(32)}
     generated = Roughtime.Wire.generate(message)
     result = Roughtime.Wire.parse(generated)
-    assert result == message
+    {test_value, known} = Map.pop(message, :TEST)
+    assert result == Map.put(known, "TEST", test_value)
   end
 
   test "generates nested structure" do
