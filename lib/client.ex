@@ -26,4 +26,27 @@ defmodule Roughtime.Client do
     payload = Roughtime.Wire.generate(req)
     {payload, Map.fetch!(req, :NONC)}
   end
+
+  @doc """
+  Check that `path` and `index` (the PATH and INDX tags) prove that `request`
+  is in the Merkle tree with `root`.
+  """
+  @spec verify_path(binary(), binary(), binary(), binary()) :: boolean()
+  def verify_path(request, <<index::unsigned-little-integer-size(32)>>, path, root) do
+    leaf = Roughtime.MerkleCrypto.hash(<<0>> <> request)
+    walk(leaf, index, path) == root
+  end
+
+  defp walk(hash, 0, <<>>), do: hash
+
+  defp walk(hash, index, <<node::binary-size(32), rest::binary>>) do
+    hash =
+      if rem(index, 2) == 0,
+        do: Roughtime.MerkleCrypto.hash(<<1>> <> hash <> node),
+        else: Roughtime.MerkleCrypto.hash(<<1>> <> node <> hash)
+
+    walk(hash, div(index, 2), rest)
+  end
+
+  defp walk(_hash, _index, _path), do: nil
 end

@@ -1,5 +1,4 @@
 defmodule Roughtime.Server do
-  use Agent
 
   @moduledoc """
   Roughtime server logic without network interactions.
@@ -13,11 +12,6 @@ defmodule Roughtime.Server do
 
   # Default value for RADI until we know better precision
   @default_precision <<3, 0, 0, 0>>
-
-  @spec start_link(any()) :: Agent.on_start()
-  def start_link(_opts) do
-    Agent.start_link(fn -> %{} end, name: __MODULE__)
-  end
 
   @doc """
   Process a roughtime request.
@@ -33,7 +27,7 @@ defmodule Roughtime.Server do
          :ok <- check_type(Map.get(req, :TYPE)),
          :ok <- check_srv(Map.get(req, :SRV)),
          :ok <- check_nonce(Map.get(req, :NONC)),
-         {:ok, res} <- generate_response(req, request),
+         res = Roughtime.Batcher.respond(request, Map.get(req, :NONC)),
          :ok <- check_size(res, request) do
       {:ok, res}
     end
@@ -75,31 +69,36 @@ defmodule Roughtime.Server do
       else: {:error, "Response is larger than request"}
   end
 
-  @spec generate_response(map(), binary()) :: {:ok, binary()}
-  defp generate_response(req, request) do
-    [root, index, path] = Roughtime.MerkleTree.update_tree(request)
+  @doc """
+  Sign a batch of `{request, nonce}` pairs with one signature. Returns one encoded
+  response per request, in the same order.
+  """
+  @spec sign([{binary(), binary()}, ...]) :: [binary()]
+  def sign(batch) do
+    {root, paths} = Roughtime.MerkleTree.build(for {request, _nonce} <- batch, do: request)
 
-    srep = %{
-      VER: @supported_version,
-      RADI: @default_precision,
-      MIDP: DateTime.now!("Etc/UTC"),
-      VERS: @supported_version,
-      ROOT: root
-    }
+    srep =
+      Roughtime.Wire.generate_message(%{
+        VER: @supported_version,
+        RADI: @default_precision,
+        MIDP: DateTime.now!("Etc/UTC"),
+        VERS: @supported_version,
+        ROOT: root
+      })
 
-    srep_msg = Roughtime.Wire.generate_message(srep)
-    srep_sig = Roughtime.CertBox.sign(srep_msg)
+    sig = Roughtime.CertBox.sign(srep)
+    cert = Roughtime.CertBox.cert()
 
-    res = %{
-      SIG: srep_sig,
-      NONC: Map.get(req, :NONC),
-      TYPE: Roughtime.Wire.response_type(),
-      PATH: path,
-      SREP: srep_msg,
-      CERT: Roughtime.CertBox.cert(),
-      INDX: index
-    }
-
-    {:ok, Roughtime.Wire.generate(res)}
+    for {{{_request, nonce}, path}, index} <- Enum.with_index(Enum.zip(batch, paths)) do
+      Roughtime.Wire.generate(%{
+        SIG: sig,
+        NONC: nonce,
+        TYPE: Roughtime.Wire.response_type(),
+        PATH: path,
+        SREP: srep,
+        CERT: cert,
+        INDX: <<index::unsigned-little-integer-size(32)>>
+      })
+    end
   end
 end

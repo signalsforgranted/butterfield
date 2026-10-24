@@ -5,7 +5,7 @@ defmodule Roughtime.ServerTest do
   @moduletag :capture_log
 
   setup do
-    {:ok, server} = Roughtime.Server.start_link(%{})
+    {:ok, server} = Roughtime.Batcher.start_link(%{})
     {:ok, box} = Roughtime.CertBox.start_link(%{})
 
     %{server: server, box: box}

@@ -63,9 +63,9 @@ defmodule Roughtime.RFCTest do
 
   test "ROOT is the Merkle root of the request", %{responses: responses} do
     for %{"request" => request, "response" => response} <- responses do
-      [root, index, path] = Roughtime.MerkleTree.update_tree(request)
       res = Roughtime.Wire.parse(response)
-      assert {root, index, path} == {res[:SREP][:ROOT], res[:INDX], res[:PATH]}
+      assert Roughtime.MerkleTree.build([request]) == {res[:SREP][:ROOT], [res[:PATH]]}
+      assert Roughtime.Client.verify_path(request, res[:INDX], res[:PATH], res[:SREP][:ROOT])
     end
   end
 end

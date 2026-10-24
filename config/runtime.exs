@@ -31,4 +31,10 @@ config :butterfield,
   max_connections: String.to_integer(System.get_env("BTRFLD_MAX_CONNECTIONS") || "1024"),
 
   # Maximum number of TCP connections waiting to be accepted
-  backlog: String.to_integer(System.get_env("BTRFLD_BACKLOG") || "4096")
+  backlog: String.to_integer(System.get_env("BTRFLD_BACKLOG") || "4096"),
+
+  # Maximum number of UDP requests waiting for a response at once
+  max_udp_requests: String.to_integer(System.get_env("BTRFLD_MAX_UDP_REQUESTS") || "4096"),
+
+  # Maximum number of requests signed together in one batch
+  batch_size: String.to_integer(System.get_env("BTRFLD_BATCH_SIZE") || "64")
