@@ -35,8 +35,7 @@ defmodule App.MixProject do
       {:credo, "~> 1.7.13", only: [:dev, :test], runtime: false},
       {:sobelow, "~> 0.14.1", only: [:dev, :test], runtime: false},
       {:sbom, "~> 0.7", only: :dev, runtime: false},
-      {:ex_doc, "~> 0.39.1", only: [:dev], runtime: false},
-      {:incendium, "~> 0.5.0", only: [:dev], runtime: false}
+      {:ex_doc, "~> 0.39.1", only: [:dev], runtime: false}
     ]
   end
 

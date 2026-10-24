@@ -124,24 +124,16 @@ defmodule Roughtime.Wire do
   def message_length(_), do: {:error, "Bad packet header"}
 
   @doc """
-  Parse a request packet.
-  Returns a list of lists, each with the tag as first element and value as second.
+  Parse a packet, including the Roughtime protocol identifier.
+  Returns a map of tags to values; raises FunctionClauseError on anything else.
   """
   @spec parse(binary()) :: map()
-  def parse(message) when is_binary(message) do
-    case message do
-      <<@protocol_identifier::unsigned-little-integer-size(64), rest::bits>> ->
-        <<
-          length::unsigned-little-integer-size(32),
-          message::binary
-        >> = rest
-
-        message = <<message::binary-size(length)>>
-        parse_message(message)
-
-      _ ->
-        parse_message(message)
-    end
+  def parse(<<
+        @protocol_identifier::unsigned-little-integer-size(64),
+        length::unsigned-little-integer-size(32),
+        message::binary-size(length)
+      >>) do
+    parse_message(message)
   end
 
   @doc """

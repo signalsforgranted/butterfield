@@ -1,4 +1,4 @@
-.PHONY: build dev test bench
+.PHONY: build iex shell test analyse audit format docs clean
 
 CONTAINER=docker
 
@@ -31,9 +31,6 @@ audit:
 	@${BASE_CMD} mix sobelow --details --private
 	@${BASE_CMD} mix hex.audit
 	@${BASE_CMD} mix sbom.cyclonedx
-
-bench:
-	@${BASE_CMD} mix run bench/wire.exs
 
 format:
 	@${BASE_CMD} mix format

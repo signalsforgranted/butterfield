@@ -16,20 +16,13 @@ defmodule Roughtime.WireTest do
     end
   end
 
-  test "parse classic request" do
-    payload =
-      "test/fixtures/google-request.bin"
-      |> File.read!()
+  test "rejects packets without a header or with the wrong length" do
+    packet = Roughtime.Wire.generate(%{NONC: :crypto.strong_rand_bytes(32)})
+    <<_header::binary-size(12), message::binary>> = packet
 
-    message = Roughtime.Wire.parse(payload)
-
-    for {tag, _value} <- message do
-      if not Enum.member?(["PAD", :NONC], tag) do
-        flunk("Contains unexpected tag #{tag}")
-      end
-    end
-
-    assert byte_size(Map.get(message, :NONC)) == 64
+    assert_raise FunctionClauseError, fn -> Roughtime.Wire.parse(message) end
+    assert_raise FunctionClauseError, fn -> Roughtime.Wire.parse(packet <> <<0>>) end
+    assert_raise FunctionClauseError, fn -> Roughtime.Wire.parse(binary_part(packet, 0, 20)) end
   end
 
   test "parse draft-14 response" do

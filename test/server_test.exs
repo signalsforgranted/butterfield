@@ -39,6 +39,13 @@ defmodule Roughtime.ServerTest do
     assert badver_res != :ok
   end
 
+  test "ignores requests missing the packet header" do
+    {req, _nonc} = Roughtime.Client.generate_request()
+    <<_header::binary-size(12), message::binary>> = req
+
+    assert {:error, "Malformed packet"} = Roughtime.Server.handle_request(message)
+  end
+
   test "only answers requests at least as big as the response" do
     req = fn pad ->
       Roughtime.Wire.generate(%{
