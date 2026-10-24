@@ -1,5 +1,4 @@
 defmodule Roughtime.Server do
-
   @moduledoc """
   Roughtime server logic without network interactions.
 

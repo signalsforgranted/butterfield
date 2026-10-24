@@ -34,10 +34,23 @@ defmodule Roughtime.TCPHandler do
   end
 
   defp accept(listener) do
-    {:ok, socket} = :gen_tcp.accept(listener)
+    case :gen_tcp.accept(listener) do
+      {:ok, socket} ->
+        hand_off(socket)
 
-    # The task must not touch the socket until it owns it, otherwise it can
-    # close it before controlling_process/2 runs.
+      # Usually out of file descriptors (:emfile). Crashing would restart the
+      # listener into the same error until the supervisor gives up, so wait
+      # and try again. :closed isn't matched: the listener is gone, so ahead
+      # and crash.
+      {:error, reason} when reason != :closed ->
+        Logger.warning("TCP accept failed: #{inspect(reason)}")
+        Process.sleep(100)
+    end
+
+    accept(listener)
+  end
+
+  defp hand_off(socket) do
     case Task.Supervisor.start_child(Roughtime.TCPConnections, fn -> await(socket) end) do
       {:ok, pid} ->
         :ok = :gen_tcp.controlling_process(socket, pid)
@@ -47,8 +60,6 @@ defmodule Roughtime.TCPHandler do
         Logger.debug("Too many TCP connections, closing new one")
         :gen_tcp.close(socket)
     end
-
-    accept(listener)
   end
 
   defp await(socket) do
