@@ -48,6 +48,14 @@ defmodule Roughtime.CertBox do
   end
 
   @doc """
+  The `SRV` value for a long-term public key.
+  """
+  @spec srv_hash(binary()) :: binary()
+  def srv_hash(lt_pubkey) do
+    <<:crypto.hash(:sha512, <<0xFF>> <> lt_pubkey)::binary-size(32)>>
+  end
+
+  @doc """
   Start the Agent, and set up pre-signing of the certificate and temporary keys.
   Map should contain the long term private key as `lt_prikey`, and public key as
   `lt_pubkey`. If either aren't set, we just make some temporary ones.
@@ -88,7 +96,7 @@ defmodule Roughtime.CertBox do
       PUBK: tmp_pubkey
     }
 
-    lt_pubkey_hash = <<:crypto.hash(:sha512, <<0xFF>> <> lt_pubkey)::binary-size(32)>>
+    lt_pubkey_hash = srv_hash(lt_pubkey)
     dele_ser = Roughtime.Wire.generate_message(dele)
 
     sig =
