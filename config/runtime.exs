@@ -25,4 +25,10 @@ config :butterfield,
   cert_duration: 90,
 
   # Maximum time in milliseconds that TCP connections can remain idle
-  idle_timeout: String.to_integer(System.get_env("BTRFLD_IDLE_TIMEOUT") || "10000")
+  idle_timeout: String.to_integer(System.get_env("BTRFLD_IDLE_TIMEOUT") || "10000"),
+
+  # Maximum number of TCP connections concurrently
+  max_connections: String.to_integer(System.get_env("BTRFLD_MAX_CONNECTIONS") || "1024"),
+
+  # Maximum number of TCP connections waiting to be accepted
+  backlog: String.to_integer(System.get_env("BTRFLD_BACKLOG") || "4096")

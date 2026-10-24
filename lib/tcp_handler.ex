@@ -11,6 +11,10 @@ defmodule Roughtime.TCPHandler do
   @spec default_port() :: integer()
   defp default_port, do: Application.fetch_env!(:butterfield, :port)
 
+  # Connections waiting to be accepted before the OS starts refusing them.
+  @spec backlog() :: integer()
+  defp backlog, do: Application.fetch_env!(:butterfield, :backlog)
+
   def start_link(_params) do
     Task.start_link(__MODULE__, :listen, [])
   end
@@ -23,8 +27,7 @@ defmodule Roughtime.TCPHandler do
         :binary,
         active: false,
         reuseaddr: true,
-        # TODO This should be configuration
-        backlog: 4096
+        backlog: backlog()
       ])
 
     accept(listener)
@@ -32,9 +35,26 @@ defmodule Roughtime.TCPHandler do
 
   defp accept(listener) do
     {:ok, socket} = :gen_tcp.accept(listener)
-    {:ok, pid} = Task.Supervisor.start_child(Roughtime.TCPConnections, fn -> serve(socket) end)
-    :ok = :gen_tcp.controlling_process(socket, pid)
+
+    # The task must not touch the socket until it owns it, otherwise it can
+    # close it before controlling_process/2 runs.
+    case Task.Supervisor.start_child(Roughtime.TCPConnections, fn -> await(socket) end) do
+      {:ok, pid} ->
+        :ok = :gen_tcp.controlling_process(socket, pid)
+        send(pid, :socket)
+
+      {:error, :max_children} ->
+        Logger.debug("Too many TCP connections, closing new one")
+        :gen_tcp.close(socket)
+    end
+
     accept(listener)
+  end
+
+  defp await(socket) do
+    receive do
+      :socket -> serve(socket)
+    end
   end
 
   defp serve(socket) do

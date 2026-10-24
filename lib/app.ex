@@ -7,6 +7,7 @@ defmodule Roughtime.Application do
     lt_prikey = Application.get_env(:butterfield, :private_key)
     lt_pubkey = Application.get_env(:butterfield, :public_key)
     cert_duration = Application.get_env(:butterfield, :cert_duration)
+    max_connections = Application.get_env(:butterfield, :max_connections)
 
     Application.delete_env(:butterfield, :private_key)
     Application.delete_env(:butterfield, :public_key)
@@ -22,7 +23,7 @@ defmodule Roughtime.Application do
       Roughtime.MerkleTree,
       Roughtime.Server,
       Roughtime.UDPHandler,
-      {Task.Supervisor, name: Roughtime.TCPConnections},
+      {Task.Supervisor, name: Roughtime.TCPConnections, max_children: max_connections},
       Roughtime.TCPHandler
     ]
 
