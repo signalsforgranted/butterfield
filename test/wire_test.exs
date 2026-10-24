@@ -93,4 +93,28 @@ defmodule Roughtime.WireTest do
     unix_got = Roughtime.Wire.parse_timestamp(unix_ts)
     assert unix_got == dt
   end
+
+  describe "message_length/1" do
+    test "reads the length from a real request header" do
+      {req, _nonc} = Roughtime.Client.generate_request()
+      <<header::binary-size(12), message::binary>> = req
+      assert Roughtime.Wire.message_length(header) == {:ok, byte_size(message)}
+    end
+
+    test "accepts the maximum length" do
+      max = Roughtime.Wire.max_length()
+      assert {:ok, ^max} = Roughtime.Wire.message_length(<<"ROUGHTIM", max::little-32>>)
+    end
+
+    test "rejects a wrong identifier or short header" do
+      assert {:error, _} = Roughtime.Wire.message_length(<<"ROUGHTIX", 1024::little-32>>)
+      assert {:error, _} = Roughtime.Wire.message_length(<<"ROUGHTIM">>)
+    end
+
+    test "rejects zero and oversized lengths" do
+      too_big = Roughtime.Wire.max_length() + 1
+      assert {:error, _} = Roughtime.Wire.message_length(<<"ROUGHTIM", 0::little-32>>)
+      assert {:error, _} = Roughtime.Wire.message_length(<<"ROUGHTIM", too_big::little-32>>)
+    end
+  end
 end

@@ -54,8 +54,16 @@ defmodule Roughtime.Wire do
   It's worth noting that certain tags can have values of messages themselves,
   allowing for unlimited depth in nesting of tags.
   """
-  # "ROUGHTIM"
+
+  @doc "Protocol Identifier as little endian - 'ROUGHTIM'"
   @protocol_identifier 0x4D49544847554F52
+  @spec protocol_identifier() :: integer()
+  def protocol_identifier, do: @protocol_identifier
+
+  @doc "Largest message length accepted"
+  @max_length 65_536
+  @spec max_length() :: integer()
+  def max_length, do: @max_length
 
   @supported_tags %{
     SIG: 0x00474953,
@@ -100,6 +108,20 @@ defmodule Roughtime.Wire do
   @response_type <<1, 0, 0, 0>>
   @spec response_type() :: binary()
   def response_type, do: @response_type
+
+  @doc """
+  Read the message length from the 12-byte packet header, for transports such as
+  TCP where we need to know. Zero and anything over #{@max_length} bytes are rejected.
+  """
+  @spec message_length(binary()) :: {:ok, pos_integer()} | {:error, String.t()}
+  def message_length(<<
+        @protocol_identifier::unsigned-little-integer-size(64),
+        length::unsigned-little-integer-size(32)
+      >>)
+      when length in 1..@max_length,
+      do: {:ok, length}
+
+  def message_length(_), do: {:error, "Bad packet header"}
 
   @doc """
   Parse a request packet.

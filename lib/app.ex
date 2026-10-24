@@ -18,10 +18,12 @@ defmodule Roughtime.Application do
          lt_pubkey: lt_pubkey,
          cert_duration: cert_duration
        }},
-      Roughtime.UDPHandler,
       # TODO pass in config options
       Roughtime.MerkleTree,
-      Roughtime.Server
+      Roughtime.Server,
+      Roughtime.UDPHandler,
+      {Task.Supervisor, name: Roughtime.TCPConnections},
+      Roughtime.TCPHandler
     ]
 
     opts = [strategy: :one_for_one, name: Roughtime.Supervisor]

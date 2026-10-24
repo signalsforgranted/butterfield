@@ -1,53 +1,55 @@
 defmodule Roughtime.TCPHandler do
   @moduledoc false
   require Logger
-  use GenServer
+  use Task, restart: :permanent
 
+  # Close connections that have been idle this long, in milliseconds.
+  @spec idle_timeout() :: integer()
+  defp idle_timeout, do: Application.fetch_env!(:butterfield, :idle_timeout)
+
+  # Port to listen to - we always use the same as UDP.
   @spec default_port() :: integer()
-  defp default_port do
-    Application.fetch_env!(:butterfield, :port)
+  defp default_port, do: Application.fetch_env!(:butterfield, :port)
+
+  def start_link(_params) do
+    Task.start_link(__MODULE__, :listen, [])
   end
 
-  @doc """
-  Starts the Roughtime server, parameters are placeholder and not implemented
-  """
-  @spec start_link(any()) :: GenServer.on_start()
-  def start_link(params) do
-    GenServer.start_link(__MODULE__, params)
-  end
-
-  @impl true
-  def init(state) do
+  def listen do
     Logger.info("Starting roughtime server on TCP port #{default_port()}...")
 
-    {:ok, socket} =
+    {:ok, listener} =
       :gen_tcp.listen(default_port(), [
         :binary,
-        active: true,
+        active: false,
         reuseaddr: true,
         # TODO This should be configuration
         backlog: 4096
       ])
 
-    {:ok, %{state | socket: socket}}
+    accept(listener)
   end
 
-  @impl true
-  def handle_info(:accept, %{socket: socket} = state) do
-    {:ok, _} = :gen_tcp.accept(socket)
-    Logger.debug("Connection from #{socket}")
-    {:noreply, state}
+  defp accept(listener) do
+    {:ok, socket} = :gen_tcp.accept(listener)
+    {:ok, pid} = Task.Supervisor.start_child(Roughtime.TCPConnections, fn -> serve(socket) end)
+    :ok = :gen_tcp.controlling_process(socket, pid)
+    accept(listener)
   end
 
-  def handle_info({:tcp, socket, data}, state) do
-    case Roughtime.Server.handle_request(data) do
-      {:ok, res} -> :gen_tcp.send(socket, res)
-      {:error, reason} -> Logger.debug(reason)
+  defp serve(socket) do
+    timeout = idle_timeout()
+
+    with {:ok, header} <- :gen_tcp.recv(socket, 12, timeout),
+         {:ok, length} <- Roughtime.Wire.message_length(header),
+         {:ok, message} <- :gen_tcp.recv(socket, length, timeout),
+         {:ok, res} <- Roughtime.Server.handle_request(header <> message),
+         :ok <- :gen_tcp.send(socket, res) do
+      serve(socket)
+    else
+      error ->
+        Logger.debug("Closing TCP connection: #{inspect(error)}")
+        :gen_tcp.close(socket)
     end
-
-    {:noreply, state}
   end
-
-  def handle_info({:tcp_closed, _}, state), do: {:stop, :normal, state}
-  def handle_info({:tcp_error, _}, state), do: {:stop, :normal, state}
 end

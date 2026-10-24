@@ -6,7 +6,7 @@ import Config
 # environment variables in play, and should always have a sensible default that
 # will give the system enough to start from nothing.
 config :butterfield,
-  # UDP Port to listen on
+  # UDP & TCP port to listen on
   port: String.to_integer(System.get_env("BTRFLD_PORT") || "5319"),
 
   # Long-term keys:
@@ -22,4 +22,7 @@ config :butterfield,
   # At start up we generate an ephemeral cert which is signed by the long term
   # public key. This value in days defines the min/max time for that cert, using
   # the time of Roughtime.CertBox.start_link/1 as the min.
-  cert_duration: 90
+  cert_duration: 90,
+
+  # Maximum time in milliseconds that TCP connections can remain idle
+  idle_timeout: String.to_integer(System.get_env("BTRFLD_IDLE_TIMEOUT") || "10000")
