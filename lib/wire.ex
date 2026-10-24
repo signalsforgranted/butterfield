@@ -228,9 +228,7 @@ defmodule Roughtime.Wire do
   end
 
   @doc """
-  Wrap the message into the rest of the structure for sending reuqests. By
-  default we generate older messages not based on the I-D, and with Unix epoch
-  based timestamps.
+  Wrap the message into the rest of the structure for sending reuqests.
   """
   @spec generate(map()) :: binary()
   def generate(message) do

@@ -2,6 +2,8 @@ defmodule Roughtime.CertBoxTest do
   use ExUnit.Case, async: true
   doctest Roughtime.CertBox
 
+  @moduletag :capture_log
+
   setup do
     {pubkey, prikey} = :crypto.generate_key(:eddsa, :ed25519)
 
@@ -15,19 +17,16 @@ defmodule Roughtime.CertBoxTest do
     %{box: box, lt_prikey: prikey, lt_pubkey: pubkey}
   end
 
-  @moduletag :capture_log
   test "generates temporary long-term key" do
     pubkey = Roughtime.CertBox.pubkey()
     assert pubkey != nil
   end
 
-  @moduletag :capture_log
   test "generates hash of long-term public key" do
     pubkey_hash = Roughtime.CertBox.lt_pubkey_hash()
     assert byte_size(pubkey_hash) == 32
   end
 
-  @moduletag :capture_log
   test "generates new keys and valid certificate with signature", context do
     cert = Roughtime.CertBox.cert()
     assert cert != nil
@@ -45,7 +44,6 @@ defmodule Roughtime.CertBoxTest do
            )
   end
 
-  @moduletag :capture_log
   test "can sign a response with temporary keys", _context do
     pubkey = Roughtime.CertBox.pubkey()
     payload = <<"test string">>

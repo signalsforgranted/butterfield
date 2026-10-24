@@ -2,7 +2,7 @@
 
 CONTAINER=docker
 
-BASE_CMD=${CONTAINER} run -it --rm -p 5319:5319/udp \
+BASE_CMD=${CONTAINER} run -it --rm -p 5319:5319/udp -p 5319:5319 \
 	-v ${PWD}:/usr/src/app -w /usr/src/app \
 	-e MIX_HOME=/usr/src/app/.mix -e HEX_HOME=/usr/src/app/.hex \
 	elixir:1.20.0-alpine
