@@ -2,6 +2,8 @@ defmodule Roughtime.ServerTest do
   use ExUnit.Case
   doctest Roughtime.Server
 
+  @moduletag :capture_log
+
   setup do
     {:ok, server} = Roughtime.Server.start_link(%{})
     {:ok, box} = Roughtime.CertBox.start_link(%{})
@@ -9,7 +11,6 @@ defmodule Roughtime.ServerTest do
     %{server: server, box: box}
   end
 
-  @moduletag :capture_log
   test "handles requests" do
     {req, nonc} = Roughtime.Client.generate_request()
     assert nonc != false
@@ -24,7 +25,6 @@ defmodule Roughtime.ServerTest do
     end
   end
 
-  @moduletag :capture_log
   test "ignores unsupported versions" do
     # No pad, thus too short
     badver_req =
@@ -39,32 +39,23 @@ defmodule Roughtime.ServerTest do
     assert badver_res != :ok
   end
 
-  @moduletag :capture_log
-  test "ignores no/insufficent padding" do
-    # No pad, thus too short
-    nopad_req =
+  test "only answers requests at least as big as the response" do
+    req = fn pad ->
       Roughtime.Wire.generate(%{
+        ZZZZ: :binary.copy(<<0>>, pad),
         TYPE: Roughtime.Wire.request_type(),
         NONC: :crypto.strong_rand_bytes(32),
         VER: Roughtime.Wire.version()
       })
+    end
 
-    {nopad_res, _nopad_reason} = Roughtime.Server.handle_request(nopad_req)
-    assert nopad_res != :ok
+    big = req.(400)
+    assert {:ok, res} = Roughtime.Server.handle_request(big)
+    assert byte_size(res) <= byte_size(big)
 
-    shortpad_req =
-      Roughtime.Wire.generate(%{
-        ZZZZ: :erlang.list_to_binary(List.duplicate(0, 6)),
-        TYPE: Roughtime.Wire.request_type(),
-        NONC: :crypto.strong_rand_bytes(32),
-        VER: Roughtime.Wire.version()
-      })
-
-    {shortpad_res, _shortpad_reason} = Roughtime.Server.handle_request(shortpad_req)
-    assert shortpad_res != :ok
+    assert {:error, _} = Roughtime.Server.handle_request(req.(300))
   end
 
-  @moduletag :capture_log
   test "ignores invalid types" do
     # Response type in request
     wrongtype_req =
@@ -91,7 +82,6 @@ defmodule Roughtime.ServerTest do
     assert weirdtype_res != :ok
   end
 
-  @moduletag :capture_log
   test "insertion into merkle tree can be correctly proven" do
     {req, _nonc} = Roughtime.Client.generate_request()
     {:ok, res} = Roughtime.Server.handle_request(req)
@@ -101,7 +91,6 @@ defmodule Roughtime.ServerTest do
     assert Map.get(Map.get(got, :SREP), :ROOT) == Roughtime.MerkleCrypto.hash(<<0>> <> req)
   end
 
-  @moduletag :capture_log
   test "srep signature matches" do
     {req, _nonc} = Roughtime.Client.generate_request()
     {:ok, res} = Roughtime.Server.handle_request(req)

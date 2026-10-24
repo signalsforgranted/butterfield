@@ -14,9 +14,10 @@ defmodule Roughtime.Client do
   @spec generate_request() :: {binary(), binary()}
   def generate_request do
     req = %{
-      # 944 bytes of padding as it should get us to the required amount of
+      # 952 bytes of padding as it should get us to the required amount of
       # padding with the rest of the data structure included to make 1024 bytes
-      ZZZZ: :erlang.list_to_binary(List.duplicate(0, 944)),
+      # (minus the 12 bytes in the header).
+      ZZZZ: :erlang.list_to_binary(List.duplicate(0, 952)),
       TYPE: Roughtime.Wire.request_type(),
       NONC: :crypto.strong_rand_bytes(32),
       VER: Roughtime.Wire.version()
