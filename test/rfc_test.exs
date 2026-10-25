@@ -18,7 +18,7 @@ defmodule Roughtime.RFCTest do
   end
 
   defp verify(context, payload, sig, pubkey) do
-    :public_key.verify(context <> payload, :ignored, sig, {:ed_pub, :ed25519, pubkey})
+    :crypto.verify(:eddsa, :none, context <> payload, sig, [pubkey, :ed25519])
   end
 
   test "parses requests", %{responses: responses} do

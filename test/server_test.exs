@@ -157,11 +157,12 @@ defmodule Roughtime.ServerTest do
     got_sig = Roughtime.CertBox.sign(raw_srep)
     assert Map.get(got, :SIG) == got_sig
 
-    assert :public_key.verify(
+    assert :crypto.verify(
+             :eddsa,
+             :none,
              Roughtime.CertBox.response_context() <> raw_srep,
-             :ignored,
              Map.get(got, :SIG),
-             {:ed_pub, :ed25519, get_in(got, [:CERT, :DELE, :PUBK])}
+             [get_in(got, [:CERT, :DELE, :PUBK]), :ed25519]
            )
   end
 end

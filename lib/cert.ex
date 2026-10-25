@@ -100,12 +100,7 @@ defmodule Roughtime.CertBox do
     dele_ser = Roughtime.Wire.generate_message(dele)
 
     sig =
-      :public_key.sign(
-        @delegation_context <> dele_ser,
-        :ignored,
-        {:ed_pri, :ed25519, lt_pubkey, lt_prikey},
-        []
-      )
+      :crypto.sign(:eddsa, :none, @delegation_context <> dele_ser, [lt_prikey, :ed25519])
 
     cert =
       Roughtime.Wire.generate_message(%{
@@ -162,11 +157,6 @@ defmodule Roughtime.CertBox do
   def sign(payload) do
     prikey = Map.fetch!(Agent.get(__MODULE__, & &1), :prikey)
 
-    :public_key.sign(
-      @response_context <> payload,
-      :ignored,
-      {:ed_pri, :ed25519, pubkey(), prikey},
-      []
-    )
+    :crypto.sign(:eddsa, :none, @response_context <> payload, [prikey, :ed25519])
   end
 end

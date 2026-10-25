@@ -36,11 +36,12 @@ defmodule Roughtime.CertBoxTest do
 
     cert = Roughtime.Wire.parse_message(cert, false)
 
-    assert :public_key.verify(
+    assert :crypto.verify(
+             :eddsa,
+             :none,
              Roughtime.CertBox.delegation_context() <> Map.fetch!(cert, :DELE),
-             :ignored,
              Map.fetch!(cert, :SIG),
-             {:ed_pub, :ed25519, Map.fetch!(context, :lt_pubkey)}
+             [Map.fetch!(context, :lt_pubkey), :ed25519]
            )
   end
 
@@ -49,11 +50,12 @@ defmodule Roughtime.CertBoxTest do
     payload = <<"test string">>
     sig = Roughtime.CertBox.sign(payload)
 
-    assert :public_key.verify(
+    assert :crypto.verify(
+             :eddsa,
+             :none,
              Roughtime.CertBox.response_context() <> payload,
-             :ignored,
              sig,
-             {:ed_pub, :ed25519, pubkey}
+             [pubkey, :ed25519]
            )
   end
 end

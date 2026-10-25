@@ -40,7 +40,7 @@ defmodule Roughtime.TCPHandler do
 
       # Usually out of file descriptors (:emfile). Crashing would restart the
       # listener into the same error until the supervisor gives up, so wait
-      # and try again. :closed isn't matched: the listener is gone, so ahead
+      # and try again. :closed isn't matched: the listener is gone, so go on
       # and crash.
       {:error, reason} when reason != :closed ->
         Logger.warning("TCP accept failed: #{inspect(reason)}")
