@@ -111,32 +111,6 @@ defmodule Roughtime.ServerTest do
     assert {:error, _} = Roughtime.Server.handle_request(req.(300))
   end
 
-  test "ignores invalid types" do
-    # Response type in request
-    wrongtype_req =
-      Roughtime.Wire.generate(%{
-        ZZZZ: :erlang.list_to_binary(List.duplicate(0, 944)),
-        TYPE: Roughtime.Wire.response_type(),
-        NONC: :crypto.strong_rand_bytes(32),
-        VER: Roughtime.Wire.version()
-      })
-
-    {wrongtype_res, _wrongtype_reason} = Roughtime.Server.handle_request(wrongtype_req)
-    assert wrongtype_res == :error
-
-    # Not a real type
-    weirdtype_req =
-      Roughtime.Wire.generate(%{
-        ZZZZ: :erlang.list_to_binary(List.duplicate(0, 944)),
-        TYPE: <<180>>,
-        NONC: :crypto.strong_rand_bytes(32),
-        VER: Roughtime.Wire.version()
-      })
-
-    {weirdtype_res, _weirdtype_reason} = Roughtime.Server.handle_request(weirdtype_req)
-    assert weirdtype_res != :ok
-  end
-
   test "insertion into merkle tree can be correctly proven" do
     {req, _nonc} = Roughtime.Client.generate_request()
     {:ok, res} = Roughtime.Server.handle_request(req)

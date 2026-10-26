@@ -91,6 +91,10 @@ defmodule Roughtime.Wire do
   @nestable_names Enum.map(@nestable_tags, &Atom.to_string/1)
   @tag_atoms Map.new(@supported_tags, fn {tag, _} -> {Atom.to_string(tag), tag} end)
 
+  # List of tags which are represented as timestamps
+  @timestamp_tags [:MIDP, :MINT, :MAXT]
+  @timestamp_names Enum.map(@timestamp_tags, &Atom.to_string/1)
+
   @spec get_tag(atom) :: integer()
   def get_tag(tag), do: Map.get(@supported_tags, tag)
 
@@ -202,7 +206,7 @@ defmodule Roughtime.Wire do
       # Parse the value out where we require non-binary types used
       value =
         case tag do
-          t when t in ["MIDP", "MINT", "MAXT"] -> parse_timestamp(value)
+          t when t in @timestamp_names -> parse_timestamp(value)
           _ -> value
         end
 
@@ -251,23 +255,7 @@ defmodule Roughtime.Wire do
   def generate_message(message) do
     total_pairs = length(Map.keys(message))
 
-    message =
-      Enum.map(message, fn {tag, value} ->
-        # Values have to processed at same time as tags because we need to know
-        # the tag at time for validation.
-        value =
-          if Enum.member?(@nestable_tags, tag) and is_map(value) do
-            generate_message(value)
-          else
-            # We're too nested deep, this code needs to be refactored
-            case tag do
-              t when t in [:MIDP, :MINT, :MAXT] -> generate_timestamp(value)
-              _ -> value
-            end
-          end
-
-        {tag, value}
-      end)
+    message = Enum.map(message, fn {tag, value} -> {tag, generate_value(tag, value)} end)
 
     # "Tags MUST be listed in the same order as the offsets of their values and
     # MUST also be sorted in ascending order by numeric value"
@@ -307,6 +295,15 @@ defmodule Roughtime.Wire do
       :erlang.list_to_binary(tags) <>
       :erlang.list_to_binary(values)
   end
+
+  # Encoding a value depends on its tag.
+  defp generate_value(tag, value) when tag in @nestable_tags and is_map(value),
+    do: generate_message(value)
+
+  defp generate_value(tag, value) when tag in @timestamp_tags,
+    do: generate_timestamp(value)
+
+  defp generate_value(_tag, value), do: value
 
   @doc """
   Generate a timestamp

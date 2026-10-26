@@ -6,7 +6,7 @@ defmodule App.MixProject do
       name: "Butterfield",
       app: :butterfield,
       version: "0.8.0",
-      elixir: "~> 1.19",
+      elixir: "~> 1.20",
       elixirc_options: [
         warnings_as_errors: true
       ],
@@ -19,7 +19,7 @@ defmodule App.MixProject do
 
   def application do
     [
-      extra_applications: [:logger, :public_key, :crypto],
+      extra_applications: [:logger, :crypto],
       mod: {Roughtime.Application, []}
     ]
   end
