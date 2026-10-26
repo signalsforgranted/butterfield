@@ -173,7 +173,7 @@ defmodule Roughtime.Wire do
     >> = offsets_tags_values
 
     offsets = for <<offset::unsigned-little-integer-size(32) <- offsets>>, do: offset
-    tags = for <<tag::bitstring-size(32) <- tags>>, do: tag
+    tags = check_tags!(for <<tag::bitstring-size(32) <- tags>>, do: tag)
 
     # Append and prepend start end end values, to make scanning more logical
     offsets = check_offsets!([0 | offsets] ++ [byte_size(values)])
@@ -223,6 +223,16 @@ defmodule Roughtime.Wire do
     end
   end
 
+  defp check_tags!(tags) do
+    values = Enum.map(tags, &:binary.decode_unsigned(&1, :little))
+
+    if values == values |> Enum.sort() |> Enum.dedup() do
+      tags
+    else
+      raise ArgumentError, "Tags must be in strictly ascending order"
+    end
+  end
+
   @doc """
   Parse timestamp values.
   Timestamps are either provided with UNIX Epoch (midnight 1970-01-01) values,
@@ -267,25 +277,11 @@ defmodule Roughtime.Wire do
 
     # "Tags MUST be listed in the same order as the offsets of their values and
     # MUST also be sorted in ascending order by numeric value"
-    sorted_message =
-      Enum.to_list(message)
-      |> Enum.sort(fn {key1, _v1}, {key2, _v2} ->
-        Roughtime.Wire.get_tag(key1) < Roughtime.Wire.get_tag(key2)
-      end)
-
-    {tags, values} = Enum.unzip(sorted_message)
-
-    # Tags - 3 byte tags need padding with 0x0.
-    tags =
-      Enum.map(tags, fn tag ->
-        tag = Atom.to_string(tag)
-
-        if String.length(tag) == 3 do
-          tag <> <<0>>
-        else
-          tag
-        end
-      end)
+    {tags, values} =
+      message
+      |> Enum.map(fn {tag, value} -> {wire_tag(tag), value} end)
+      |> Enum.sort_by(fn {tag, _value} -> :binary.decode_unsigned(tag, :little) end)
+      |> Enum.unzip()
 
     # increment for the length of each respective value.
     offsets =
@@ -302,6 +298,11 @@ defmodule Roughtime.Wire do
       :erlang.list_to_binary(offsets) <>
       :erlang.list_to_binary(tags) <>
       :erlang.list_to_binary(values)
+  end
+
+  defp wire_tag(tag) do
+    tag = Atom.to_string(tag)
+    if byte_size(tag) == 3, do: tag <> <<0>>, else: tag
   end
 
   # Encoding a value depends on its tag.

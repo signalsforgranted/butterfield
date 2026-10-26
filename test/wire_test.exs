@@ -114,4 +114,12 @@ defmodule Roughtime.WireTest do
     assert_raise ArgumentError, fn -> Roughtime.Wire.parse_message(unaligned) end
     assert_raise ArgumentError, fn -> Roughtime.Wire.parse_message(descending) end
   end
+
+  test "rejects tags that aren't in strictly ascending order" do
+    unsorted = <<2::little-32, 4::little-32, "TYPE", "NONC", 0::64>>
+    repeated = <<2::little-32, 4::little-32, "NONC", "NONC", 0::64>>
+
+    assert_raise ArgumentError, fn -> Roughtime.Wire.parse_message(unsorted) end
+    assert_raise ArgumentError, fn -> Roughtime.Wire.parse_message(repeated) end
+  end
 end
