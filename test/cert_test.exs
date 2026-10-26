@@ -48,7 +48,8 @@ defmodule Roughtime.CertBoxTest do
   test "can sign a response with temporary keys", _context do
     pubkey = Roughtime.CertBox.pubkey()
     payload = <<"test string">>
-    sig = Roughtime.CertBox.sign(payload)
+    {sig, cert} = Roughtime.CertBox.sign(payload)
+    assert cert == Roughtime.CertBox.cert()
 
     assert :crypto.verify(
              :eddsa,
@@ -57,5 +58,37 @@ defmodule Roughtime.CertBoxTest do
              sig,
              [pubkey, :ed25519]
            )
+  end
+
+  test "certificate is backdated by an hour and lasts cert_duration", _context do
+    dele = Roughtime.Wire.parse_message(Roughtime.CertBox.cert()) |> Map.fetch!(:DELE)
+    now = DateTime.utc_now()
+
+    assert DateTime.diff(dele[:MAXT], dele[:MINT], :hour) == 3
+    assert DateTime.compare(dele[:MINT], now) == :lt
+    assert DateTime.compare(dele[:MAXT], now) == :gt
+  end
+
+  test "rotates to a new temporary key and certificate", context do
+    old = {Roughtime.CertBox.pubkey(), Roughtime.CertBox.cert()}
+    send(Roughtime.CertBox, :rotate)
+    {pubkey, cert} = {Roughtime.CertBox.pubkey(), Roughtime.CertBox.cert()}
+
+    assert {pubkey, cert} != old
+
+    cert = Roughtime.Wire.parse_message(cert, false)
+
+    assert :crypto.verify(
+             :eddsa,
+             :none,
+             Roughtime.CertBox.delegation_context() <> Map.fetch!(cert, :DELE),
+             Map.fetch!(cert, :SIG),
+             [Map.fetch!(context, :lt_pubkey), :ed25519]
+           )
+  end
+
+  test "keeps private keys out of its status", context do
+    refute inspect(:sys.get_status(Roughtime.CertBox), limit: :infinity) =~
+             inspect(context.lt_prikey, limit: :infinity)
   end
 end

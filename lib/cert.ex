@@ -1,7 +1,7 @@
 require Logger
 
 defmodule Roughtime.CertBox do
-  use Agent
+  use GenServer
 
   @moduledoc """
   Handle and generate key material.
@@ -11,16 +11,18 @@ defmodule Roughtime.CertBox do
   runtime configuration, and a temporary keypair which has some defined time
   range of validity that is generated at service start up. When the service
   initialises, we generate a new temporary keypair and sign it with the
-  long-term key, subsequently no longer using the long term key material. All
-  responses are then signed with the temporary key. A new temporary key can be
-  generated at a later time (important for long-running instances that exceed
-  the `MAXT` value, but require the long-term private key again to do so.
-
-  "Volat tempus"
+  long-term key. All responses are then signed with the temporary key. A new
+  temporary key can be generated at a later time (important for long-running
+  instances that exceed the `MAXT` value, but require the long-term private key
+  again to do so.
   """
 
-  # Default duration of temporary certificates made off the long-term
-  @default_cert_duration 90
+  # Default duration in hours of temporary certificates made off the long-term
+  @default_cert_duration 24
+
+  # MINT is backdated so that a MIDP taken just before a rotation is still
+  # inside the new certificate
+  @backdate_hours 1
 
   # Context Strings are required when signing messages, earlier versions used
   # "Ed25519ctx" cryptographic functions, however as these are not well
@@ -60,8 +62,13 @@ defmodule Roughtime.CertBox do
   Map should contain the long term private key as `lt_prikey`, and public key as
   `lt_pubkey`. If either aren't set, we just make some temporary ones.
   """
-  @spec start_link(map()) :: Agent.on_start()
+  @spec start_link(map()) :: GenServer.on_start()
   def start_link(keys) do
+    GenServer.start_link(__MODULE__, keys, name: __MODULE__)
+  end
+
+  @impl true
+  def init(keys) do
     # We don't have keys, make temp...
     {lt_pubkey, lt_prikey} =
       if Map.get(keys, :lt_prikey) != nil and Map.get(keys, :lt_pubkey) != nil do
@@ -75,18 +82,44 @@ defmodule Roughtime.CertBox do
 
     duration = Map.get(keys, :cert_duration, @default_cert_duration)
 
-    keys = generate(lt_pubkey, lt_prikey, duration)
-    Agent.start_link(fn -> keys end, name: __MODULE__)
+    state =
+      generate(lt_pubkey, lt_prikey, duration)
+      |> Map.merge(%{lt_prikey: lt_prikey, duration: duration})
+
+    schedule_rotation(duration)
+    {:ok, state}
+  end
+
+  @impl true
+  def handle_info(:rotate, state) do
+    schedule_rotation(state.duration)
+    {:noreply, Map.merge(state, generate(state.lt_pubkey, state.lt_prikey, state.duration))}
+  end
+
+  @impl true
+  def handle_call({:get, key}, _from, state), do: {:reply, Map.fetch!(state, key), state}
+
+  def handle_call(:signing, _from, state), do: {:reply, {state.prikey, state.cert}, state}
+
+  # Keep private keys out of crash reports and :sys.get_status/1
+  @impl true
+  def format_status(status) do
+    Map.replace_lazy(status, :state, &Map.drop(&1, [:lt_prikey, :prikey]))
+  end
+
+  defp schedule_rotation(duration) do
+    Process.send_after(self(), :rotate, div(:timer.hours(duration), 2))
   end
 
   @doc """
   Generate the temporary keys and pre-generate the CERT and nested tags
   """
   @spec generate(binary(), binary(), pos_integer()) :: map()
-  def generate(lt_pubkey, lt_prikey, duration) do
+  def generate(lt_pubkey, lt_prikey, duration) when duration > 0 do
     Logger.info("Generating new temporary keypair...")
-    min_t = DateTime.now!("Etc/UTC")
-    max_t = DateTime.add(min_t, duration, :day)
+    now = DateTime.now!("Etc/UTC")
+    min_t = DateTime.add(now, -@backdate_hours, :hour)
+    max_t = DateTime.add(now, duration, :hour)
 
     {tmp_pubkey, tmp_prikey} = :crypto.generate_key(:eddsa, :ed25519)
     # Generate the CERT block
@@ -129,34 +162,28 @@ defmodule Roughtime.CertBox do
   Return the pre-computed value of the `CERT` tag, to place into responses
   """
   @spec cert() :: binary()
-  def cert do
-    Map.fetch!(Agent.get(__MODULE__, & &1), :cert)
-  end
+  def cert, do: GenServer.call(__MODULE__, {:get, :cert})
 
   @doc """
   Return the current public key
   """
   @spec pubkey() :: binary()
-  def pubkey do
-    Map.fetch!(Agent.get(__MODULE__, & &1), :pubkey)
-  end
+  def pubkey, do: GenServer.call(__MODULE__, {:get, :pubkey})
 
   @doc """
   Return the first 32 bytes off the SHA-512 hash of the long term public key,
   required to handle logic for the SRV record type.
   """
   @spec lt_pubkey_hash() :: binary()
-  def lt_pubkey_hash do
-    Map.fetch!(Agent.get(__MODULE__, & &1), :lt_pubkey_hash)
-  end
+  def lt_pubkey_hash, do: GenServer.call(__MODULE__, {:get, :lt_pubkey_hash})
 
   @doc """
-  Sign a given payload with the current key material kept in state.
+  Sign a given payload with the current temporary key. Returns the signature
+  with the matching `CERT`, fetched together so a rotation can't split them.
   """
-  @spec sign(binary()) :: binary()
+  @spec sign(binary()) :: {binary(), binary()}
   def sign(payload) do
-    prikey = Map.fetch!(Agent.get(__MODULE__, & &1), :prikey)
-
-    :crypto.sign(:eddsa, :none, @response_context <> payload, [prikey, :ed25519])
+    {prikey, cert} = GenServer.call(__MODULE__, :signing)
+    {:crypto.sign(:eddsa, :none, @response_context <> payload, [prikey, :ed25519]), cert}
   end
 end

@@ -85,8 +85,7 @@ defmodule Roughtime.Server do
         ROOT: root
       })
 
-    sig = Roughtime.CertBox.sign(srep)
-    cert = Roughtime.CertBox.cert()
+    {sig, cert} = Roughtime.CertBox.sign(srep)
 
     for {{{_request, nonce}, path}, index} <- Enum.with_index(Enum.zip(batch, paths)) do
       Roughtime.Wire.generate(%{

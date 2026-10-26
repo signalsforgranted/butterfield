@@ -127,7 +127,7 @@ defmodule Roughtime.ServerTest do
     raw_srep = Roughtime.Wire.generate_message(Map.get(got, :SREP))
     assert res =~ raw_srep
 
-    got_sig = Roughtime.CertBox.sign(raw_srep)
+    {got_sig, _cert} = Roughtime.CertBox.sign(raw_srep)
     assert Map.get(got, :SIG) == got_sig
 
     assert :crypto.verify(
