@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # Lets the release workflow run these checks before building an image
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  MIX_ENV: test
+  OTP_VERSION: "28.4"
+  ELIXIR_VERSION: "1.20.4"
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ env.OTP_VERSION }}
+          elixir-version: ${{ env.ELIXIR_VERSION }}
+
+      # deps, compiled code and Dialyzer's PLTs; rebuilt when mix.lock changes
+      - uses: actions/cache@v4
+        with:
+          path: |
+            deps
+            _build
+          key: mix-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}-${{ hashFiles('mix.lock') }}
+          restore-keys: mix-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}-
+
+      - run: mix deps.get
+      - run: mix deps.unlock --check-unused
+      - run: mix format --check-formatted
+      - run: mix compile
+      - run: mix credo --strict
+      - run: mix test --cover
+      - run: mix dialyzer --format github
+      # Config.HTTPS is a Phoenix check; Butterfield doesn't speak HTTP
+      - run: mix sobelow --private --exit -i Config.HTTPS
+      - run: mix hex.audit
