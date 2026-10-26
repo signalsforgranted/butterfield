@@ -53,20 +53,20 @@ defmodule Roughtime.WireTest do
     message = %{
       VER: <<1, 0, 0, 0>>,
       INDX: <<0, 0, 0, 0>>,
-      TYPE: <<0>>,
+      TYPE: <<0, 0, 0, 0>>,
       PATH: "",
       SREP: %{
-        ROOT: <<0>>,
+        ROOT: :binary.copy(<<0>>, 32),
         MIDP: DateTime.truncate(DateTime.now!("Etc/UTC"), :second),
-        RADI: <<0>>
+        RADI: <<0, 0, 0, 0>>
       },
       CERT: %{
         DELE: %{
           MINT: ~U[2000-01-01 00:00:00Z],
           MAXT: ~U[2049-12-31 23:59:59Z],
-          PUBK: "public key"
+          PUBK: :binary.copy(<<0>>, 32)
         },
-        SIG: <<0>>,
+        SIG: :binary.copy(<<0>>, 64),
         NONC: :crypto.strong_rand_bytes(32)
       }
     }
@@ -74,10 +74,6 @@ defmodule Roughtime.WireTest do
     generated = Roughtime.Wire.generate(message)
     result = Roughtime.Wire.parse(generated)
     assert result == message
-
-    classic_generated = Roughtime.Wire.generate(message)
-    classic_result = Roughtime.Wire.parse(classic_generated)
-    assert classic_result == message
   end
 
   test "generates and parses Unix timestamp" do
@@ -109,5 +105,13 @@ defmodule Roughtime.WireTest do
       assert {:error, _} = Roughtime.Wire.message_length(<<"ROUGHTIM", 0::little-32>>)
       assert {:error, _} = Roughtime.Wire.message_length(<<"ROUGHTIM", too_big::little-32>>)
     end
+  end
+
+  test "rejects offsets that aren't ascending multiples of 4" do
+    unaligned = <<2::little-32, 5::little-32, "NONC", "TYPE", 0::64>>
+    descending = <<3::little-32, 8::little-32, 4::little-32, "VER", 0, "NONC", "TYPE", 0::96>>
+
+    assert_raise ArgumentError, fn -> Roughtime.Wire.parse_message(unaligned) end
+    assert_raise ArgumentError, fn -> Roughtime.Wire.parse_message(descending) end
   end
 end

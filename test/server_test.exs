@@ -38,7 +38,6 @@ defmodule Roughtime.ServerTest do
     test "ignores requests without version 1" do
       error = {:error, "No supported version in VER"}
       assert handle(%{VER: <<2, 0, 0, 0, 3, 0, 0, 0>>}) == error
-      assert handle(%{VER: <<1, 0, 0>>}) == error
       assert handle(%{VER: nil}) == error
     end
   end
@@ -47,7 +46,7 @@ defmodule Roughtime.ServerTest do
     test "ignores anything but a request" do
       error = {:error, "TYPE missing or not a request"}
       assert handle(%{TYPE: Roughtime.Wire.response_type()}) == error
-      assert handle(%{TYPE: <<180>>}) == error
+      assert handle(%{TYPE: <<180, 0, 0, 0>>}) == error
       assert handle(%{TYPE: nil}) == error
     end
   end

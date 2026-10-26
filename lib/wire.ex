@@ -176,7 +176,7 @@ defmodule Roughtime.Wire do
     tags = for <<tag::bitstring-size(32) <- tags>>, do: tag
 
     # Append and prepend start end end values, to make scanning more logical
-    offsets = [0 | offsets] ++ [byte_size(values)]
+    offsets = check_offsets!([0 | offsets] ++ [byte_size(values)])
     offsets = Enum.chunk_every(offsets, 2, 1, :discard)
 
     offsets
@@ -213,6 +213,14 @@ defmodule Roughtime.Wire do
       [tag, value]
     end)
     |> Map.new(fn [k, v] -> {Map.get(@tag_atoms, k, k), v} end)
+  end
+
+  defp check_offsets!(offsets) do
+    if Enum.all?(offsets, &(rem(&1, 4) == 0)) and offsets == Enum.sort(offsets) do
+      offsets
+    else
+      raise ArgumentError, "Offsets must be ascending multiples of 4"
+    end
   end
 
   @doc """
