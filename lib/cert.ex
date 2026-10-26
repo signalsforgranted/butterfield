@@ -13,7 +13,7 @@ defmodule Roughtime.CertBox do
   initialises, we generate a new temporary keypair and sign it with the
   long-term key. All responses are then signed with the temporary key. A new
   temporary key can be generated at a later time (important for long-running
-  instances that exceed the `MAXT` value, but require the long-term private key
+  instances) that exceed the `MAXT` value, but require the long-term private key
   again to do so.
   """
 
