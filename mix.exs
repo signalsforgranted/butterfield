@@ -13,7 +13,16 @@ defmodule App.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       aliases: aliases(),
-      docs: docs()
+      docs: docs(),
+      # We don't test socket code, so ignore these
+      test_coverage: [
+        ignore_modules: [
+          Roughtime.TCPHandler,
+          Roughtime.UDPHandler
+        ]
+      ],
+      # Cache Dialyxer's PLTs.
+      dialyzer: [plt_core_path: "_build/#{Mix.env()}"]
     ]
   end
 
@@ -51,7 +60,8 @@ defmodule App.MixProject do
       main: "readme",
       extras: [
         "README.md"
-      ]
+      ],
+      assets: %{"notes" => "notes"}
     ]
   end
 end
