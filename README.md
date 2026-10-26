@@ -16,8 +16,8 @@ a type of portable sundial found in France in the late 17th and 18th century.
 
 ## Building & Running
 
-If you don't already have a compatible Elixir runtime, there's an included
-Dockerfile which is used by the Makefile for building, testing, and debugging.
+You'll need a recent version of Elixir. An included Makefile is useful for
+development.
 
 ## Developing
 

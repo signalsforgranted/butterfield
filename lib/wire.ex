@@ -95,9 +95,6 @@ defmodule Roughtime.Wire do
   @timestamp_tags [:MIDP, :MINT, :MAXT]
   @timestamp_names Enum.map(@timestamp_tags, &Atom.to_string/1)
 
-  @spec get_tag(atom) :: integer()
-  def get_tag(tag), do: Map.get(@supported_tags, tag)
-
   @doc "Protocol version - this is only used by IETF versions"
   @version <<1, 0, 0, 0>>
   @spec version() :: binary()
