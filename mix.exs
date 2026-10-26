@@ -5,7 +5,7 @@ defmodule App.MixProject do
     [
       name: "Butterfield",
       app: :butterfield,
-      version: "0.8.0",
+      version: "0.9.5",
       elixir: "~> 1.20",
       elixirc_options: [
         warnings_as_errors: true
